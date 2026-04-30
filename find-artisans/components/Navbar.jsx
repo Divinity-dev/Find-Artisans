@@ -2,89 +2,124 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, UserCircle } from 'lucide-react';
 
-export default function Navbar() {
+const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
+  
+  const isLoggedIn = false;
+
   return (
-    <nav className="w-full bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
+    <header className="sticky top-0 z-50 bg-gray-900 border-b border-gray-800">
+      <div className="max-w-[90%] mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold">
-              {/* Insert Logo Here */}
-              LOGO
-            </Link>
-          </div>
+          <Link href="/" className="flex items-center gap-1">
+            <span className="text-2xl font-extrabold text-white">
+              Find
+            </span>
+            <span className="text-2xl font-extrabold text-orange-500">
+              Artisans
+            </span>
+          </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link href="/find-workers" className="text-gray-700 hover:text-black">
+          <nav className="hidden md:flex items-center gap-8">
+            <Link href="/find-workers" className="text-gray-200 hover:text-white transition">
               Find Workers
             </Link>
 
-            <Link href="/post-job" className="text-gray-700 hover:text-black">
-              Post a Job
+            <Link href="/post-job" className="text-gray-200 hover:text-white transition">
+             How It Works
             </Link>
 
-            <Link href="/how-it-works" className="text-gray-700 hover:text-black">
-              How It Works
+            <Link href="/jobs" className="text-gray-200 hover:text-white transition">
+              Browse Jobs
             </Link>
 
-            <Link
-              href="/login"
-              className="text-gray-700 hover:text-black"
-            >
+            <Link href="/how-it-works" className="text-gray-200 hover:text-white transition">
+              Dashboard
+            </Link>
+          </nav>
+
+          {/* Right Side */}
+          <div className="hidden md:flex items-center gap-5">
+
+            <Link href="/login" className="text-gray-200 hover:text-white">
               Login
             </Link>
 
             <Link
               href="/register"
-              className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+              className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:border-gray-400 transition"
             >
               Sign Up
             </Link>
+
+            {/* Profile Icon (replaces Hire Now) */}
+            <Link
+              href="/profile"
+              className="text-gray-200 hover:text-white"
+              title="Profile"
+            >
+              <UserCircle size={30} />
+            </Link>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden">
-            <button onClick={() => setIsOpen(!isOpen)}>
-              {isOpen ? <X size={26} /> : <Menu size={26} />}
-            </button>
-          </div>
+          {/* Mobile Button */}
+          <button
+            className="md:hidden text-white"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {isOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
         </div>
       </div>
 
-      {/* Mobile Dropdown */}
-      {isOpen && (
-        <div className="md:hidden px-4 pb-4 space-y-3">
-          <Link href="/find-workers" className="block">
+      {/* Mobile Menu */}
+      <div
+        className={`md:hidden transition-all duration-300 overflow-hidden ${
+          isOpen ? 'max-h-125 opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="px-4 pb-6 space-y-4 bg-gray-900 border-t border-gray-800">
+
+          <Link href="/find-workers" className="block text-gray-200">
             Find Workers
           </Link>
 
-          <Link href="/post-job" className="block">
+          <Link href="/post-job" className="block text-gray-200">
             Post a Job
           </Link>
 
-          <Link href="/how-it-works" className="block">
+          <Link href="/jobs" className="block text-gray-200">
+            Browse Jobs
+          </Link>
+
+          <Link href="/how-it-works" className="block text-gray-200">
             How It Works
           </Link>
 
-          <Link href="/login" className="block">
+          <hr className="border-gray-700" />
+
+          <Link href="/login" className="block text-gray-200">
             Login
           </Link>
 
-          <Link
-            href="/register"
-            className="block bg-black text-white text-center py-2 rounded-lg"
-          >
+          <Link href="/register" className="block border border-gray-600 text-center py-2 rounded-lg text-gray-200">
             Sign Up
           </Link>
+
+          {/* Profile */}
+          <Link href="/profile" className="block text-center text-orange-400">
+            My Profile
+          </Link>
         </div>
-      )}
-    </nav>
+      </div>
+    </header>
   );
-}
+};
+
+export default Navbar;
