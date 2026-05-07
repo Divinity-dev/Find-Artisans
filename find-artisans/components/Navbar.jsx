@@ -25,7 +25,7 @@ const Navbar = () => {
           {/* DESKTOP NAV */}
           <nav className="hidden md:flex items-center gap-8">
 
-            <Link href="/find-workers" className="text-gray-300 hover:text-white transition">
+            <Link href="/workers" className="text-gray-300 hover:text-white transition">
               Find Workers
             </Link>
 
@@ -89,7 +89,7 @@ const Navbar = () => {
       >
         <div className="px-4 pb-6 space-y-4 bg-gray-900 border-t border-gray-800">
 
-          <Link href="/find-workers" className="block text-gray-300">
+          <Link href="/workers" className="block text-gray-300">
             Find Workers
           </Link>
 
