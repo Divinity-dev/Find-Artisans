@@ -10,6 +10,7 @@ import {
   FaSearch,
 } from 'react-icons/fa';
 
+
 const Page = () => {
   const artisans = [
     {
@@ -21,6 +22,7 @@ const Page = () => {
       image: '/images/electrician.jpeg',
       state: 'Lagos',
       city: 'Ikeja',
+      localGovernment: 'Ikeja Central',
       rating: 4.9,
       reviews: 124,
       verified: true,
@@ -36,6 +38,7 @@ const Page = () => {
       image: '/images/plumber.jpeg',
       state: 'Abuja Federal Capital Territory',
       city: 'Abuja',
+      localGovernment: 'Abuja Municipal',
       rating: 4.7,
       reviews: 98,
       verified: true,
@@ -51,6 +54,7 @@ const Page = () => {
       image: '/images/cleaner.jpeg',
       state: 'Lagos',
       city: 'Lekki',
+      localGovernment: 'Lekki Central',
       rating: 4.8,
       reviews: 210,
       verified: true,
@@ -62,6 +66,7 @@ const Page = () => {
   const [searchName, setSearchName] = useState('');
   const [selectedState, setSelectedState] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
+  const [selectedLGA, setSelectedLGA] = useState('');
 
   const nigeriaStates = State.getStatesOfCountry('NG');
 
@@ -70,6 +75,14 @@ const Page = () => {
         'NG',
         nigeriaStates.find((state) => state.name === selectedState)?.isoCode
       )
+    : [];
+
+  const localGovernments = selectedCity
+    ? [
+        `${selectedCity} Central`,
+        `${selectedCity} North`,
+        `${selectedCity} West`,
+      ]
     : [];
 
   const filteredArtisans = useMemo(() => {
@@ -88,14 +101,20 @@ const Page = () => {
         ? artisan.city === selectedCity
         : true;
 
-      return matchesName && matchesState && matchesCity;
+      const matchesLGA = selectedLGA
+        ? artisan.localGovernment === selectedLGA
+        : true;
+
+      return matchesName && matchesState && matchesCity && matchesLGA;
     });
-  }, [searchName, selectedState, selectedCity]);
+  }, [searchName, selectedState, selectedCity, selectedLGA]);
+
+  
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
 
-      {/* HERO (UNCHANGED — your original design) */}
+      {/* HERO */}
       <main
         className="relative min-h-screen flex items-center justify-center px-5 md:px-10"
         style={{
@@ -106,8 +125,6 @@ const Page = () => {
         }}
       >
         <div className="absolute inset-0 bg-black/75"></div>
-
-        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-gray-950 to-transparent"></div>
 
         <div className="relative z-10 text-center max-w-5xl w-full pt-24">
 
@@ -141,6 +158,7 @@ const Page = () => {
                 onChange={(e) => {
                   setSelectedState(e.target.value);
                   setSelectedCity('');
+                  setSelectedLGA('');
                 }}
                 className="w-full p-4 rounded-xl bg-white text-black outline-none"
               >
@@ -154,7 +172,10 @@ const Page = () => {
 
               <select
                 value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCity(e.target.value);
+                  setSelectedLGA('');
+                }}
                 className="w-full p-4 rounded-xl bg-white text-black outline-none"
               >
                 <option value="">Select City</option>
@@ -165,10 +186,18 @@ const Page = () => {
                 ))}
               </select>
 
-              <button className="bg-orange-500 hover:bg-orange-600 transition rounded-xl text-white font-semibold flex items-center justify-center gap-3 px-6 py-4 shadow-lg">
-                <FaSearch />
-                Search
-              </button>
+              <select
+                value={selectedLGA}
+                onChange={(e) => setSelectedLGA(e.target.value)}
+                className="w-full p-4 rounded-xl bg-white text-black outline-none"
+              >
+                <option value="">Select Local Government</option>
+                {localGovernments.map((lga, index) => (
+                  <option key={index} value={lga}>
+                    {lga}
+                  </option>
+                ))}
+              </select>
 
             </div>
           </div>
@@ -176,7 +205,7 @@ const Page = () => {
         </div>
       </main>
 
-      {/* CATEGORY SECTION (LIGHT BUT CONTROLLED) */}
+      {/* CATEGORY SECTION (RESTORED) */}
       <section className="py-16 px-5 md:px-10 max-w-7xl mx-auto">
 
         <div className="text-center mb-10">
@@ -209,20 +238,16 @@ const Page = () => {
         </div>
       </section>
 
-      {/* ARTISANS (NOW FULLY DARK + MATCHES JOBS PAGE STYLE) */}
+      {/* ARTISANS SECTION (RESTORED) */}
       <section className="py-10 px-5 md:px-10 max-w-7xl mx-auto border-t border-gray-800">
 
-        <div className="flex justify-between items-center mb-10 flex-wrap gap-4">
-
-          <div>
-            <h2 className="text-3xl font-bold text-white mb-2">
-              Featured Artisans
-            </h2>
-            <p className="text-gray-400">
-              Hire trusted professionals near you
-            </p>
-          </div>
-
+        <div className="mb-10">
+          <h2 className="text-3xl font-bold text-white mb-2">
+            Featured Artisans
+          </h2>
+          <p className="text-gray-400">
+            Hire trusted professionals near you
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -233,22 +258,13 @@ const Page = () => {
               className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 transition"
             >
 
-              <div className="relative">
-                <Image
-                  src={artisan.image}
-                  alt={artisan.businessName}
-                  width={500}
-                  height={300}
-                  className="w-full h-60 object-cover"
-                />
-
-                {artisan.verified && (
-                  <div className="absolute top-4 right-4 bg-green-600 text-white px-3 py-1 rounded-full flex items-center gap-2 text-xs">
-                    <FaCheckCircle />
-                    Verified
-                  </div>
-                )}
-              </div>
+              <Image
+                src={artisan.image}
+                alt={artisan.businessName}
+                width={500}
+                height={300}
+                className="w-full h-60 object-cover"
+              />
 
               <div className="p-5">
 
@@ -260,17 +276,15 @@ const Page = () => {
                   {artisan.category}
                 </p>
 
-                <p className="text-gray-400 text-sm mt-3 line-clamp-2">
+                <p className="text-gray-400 text-sm mt-3">
                   {artisan.description}
                 </p>
 
-                {/* rating */}
                 <div className="flex items-center gap-2 mt-4 text-yellow-500 text-sm">
                   <FaStar />
                   {artisan.rating} ({artisan.reviews})
                 </div>
 
-                {/* actions */}
                 <div className="mt-5 flex gap-3">
 
                   <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg text-sm font-semibold">
@@ -279,7 +293,7 @@ const Page = () => {
 
                   <a
                     href={`https://wa.me/${artisan.phone}`}
-                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm flex items-center"
                   >
                     <FaWhatsapp />
                   </a>
