@@ -10,10 +10,6 @@ import * as Yup from 'yup';
 import {
   FaEye,
   FaEyeSlash,
-  FaUser,
-  FaEnvelope,
-  FaPhone,
-  FaLock,
 } from 'react-icons/fa';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -35,6 +31,7 @@ const SignupPage = () => {
   );
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // =========================
   // REDIRECT USER
@@ -74,6 +71,10 @@ const SignupPage = () => {
     password: Yup.string()
       .min(6, 'Password must be at least 6 characters')
       .required('Password is required'),
+
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref('password')], 'Passwords do not match')
+      .required('Confirm password is required'),
   });
 
   // =========================
@@ -86,6 +87,7 @@ const SignupPage = () => {
       phone: '',
       role: 'customer',
       password: '',
+      confirmPassword: '',
     },
 
     validationSchema,
@@ -94,9 +96,9 @@ const SignupPage = () => {
       try {
         dispatch(registerStart());
 
-        const { data } = await API.post('/auth/register', values);
+        const { confirmPassword, ...payload } = values;
 
-        console.log(data);
+        const { data } = await API.post('/auth/register', payload);
 
         if (data.token) {
           localStorage.setItem('token', data.token);
@@ -106,7 +108,6 @@ const SignupPage = () => {
 
         resetForm();
 
-        // IMPORTANT FIX: ensure backend returns user object
         handleRedirect(data.user);
 
       } catch (error) {
@@ -194,6 +195,28 @@ const SignupPage = () => {
             </button>
           </div>
 
+          {/* CONFIRM PASSWORD */}
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              value={formik.values.confirmPassword}
+              onChange={formik.handleChange}
+              className="w-full p-3 bg-gray-800 text-white rounded-xl pr-10"
+            />
+
+            <button
+              type="button"
+              onClick={() =>
+                setShowConfirmPassword(!showConfirmPassword)
+              }
+              className="absolute right-3 top-3 text-gray-400"
+            >
+              {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
+
           {/* SUBMIT */}
           <button
             type="submit"
@@ -205,7 +228,10 @@ const SignupPage = () => {
         </form>
 
         <p className="text-center text-gray-400 mt-4">
-          Already have account? <Link href="/login" className="text-orange-500">Login</Link>
+          Already have account?{' '}
+          <Link href="/login" className="text-orange-500">
+            Login
+          </Link>
         </p>
 
       </div>

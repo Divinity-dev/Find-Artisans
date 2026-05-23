@@ -11,6 +11,7 @@ import {
   loginSuccess,
   loginFail,
 } from '@/redux/slices/authSlice';
+import Cookies from 'js-cookie'
 
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -36,21 +37,21 @@ const LoginPage = () => {
     useState(false);
 
   // =========================
-// REDIRECT USER
-// =========================
-const handleRedirect = (userData) => {
-  const role = userData?.user?.role;
+  // REDIRECT USER
+  // =========================
+  const handleRedirect = (userData) => {
+    const role = userData?.user?.role;
 
-  if (role === 'admin') {
-    router.push('/admin');
-  } else if (role === 'customer') {
-    router.push('/customers-dashboard');
-  } else if (role === 'worker') {
-    router.push('/workers-dashboard');
-  } else {
-    router.push('/');
-  }
-};
+    if (role === 'admin') {
+      router.push('/admin');
+    } else if (role === 'customer') {
+      router.push('/customers-dashboard');
+    } else if (role === 'worker') {
+      router.push('/workers-dashboard');
+    } else {
+      router.push('/');
+    }
+  };
 
   // =========================
   // FORMIK
@@ -73,18 +74,25 @@ const handleRedirect = (userData) => {
 
     onSubmit: async (values) => {
       try {
-        // START LOADING
         dispatch(loginStart());
 
-        // LOGIN REQUEST
         const { data } = await API.post(
           '/auth/login',
           values
         );
 
-        console.log(data);
+  Cookies.set('token', data.token, {
+  expires: 7,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+});
 
-        // SAVE TOKEN
+Cookies.set('role', data.user.role, {
+  expires: 7,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+});
+
         if (data.token) {
           localStorage.setItem(
             'token',
@@ -92,12 +100,9 @@ const handleRedirect = (userData) => {
           );
         }
 
-        // SAVE USER TO REDUX
         dispatch(loginSuccess(data));
 
-        // REDIRECT USER
         handleRedirect(data);
-
       } catch (err) {
         dispatch(
           loginFail(
@@ -148,9 +153,7 @@ const handleRedirect = (userData) => {
                   name="email"
                   placeholder="you@example.com"
                   value={formik.values.email}
-                  onChange={
-                    formik.handleChange
-                  }
+                  onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   className={`w-full pl-10 p-3 rounded-xl bg-gray-800 text-white outline-none border transition ${
                     formik.touched.email &&
@@ -187,13 +190,10 @@ const handleRedirect = (userData) => {
                   name="password"
                   placeholder="••••••••"
                   value={formik.values.password}
-                  onChange={
-                    formik.handleChange
-                  }
+                  onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   className={`w-full pl-10 pr-10 p-3 rounded-xl bg-gray-800 text-white outline-none border transition ${
-                    formik.touched
-                      .password &&
+                    formik.touched.password &&
                     formik.errors.password
                       ? 'border-red-500'
                       : 'border-gray-700 focus:border-orange-500'
@@ -203,9 +203,7 @@ const handleRedirect = (userData) => {
                 <button
                   type="button"
                   onClick={() =>
-                    setShowPassword(
-                      !showPassword
-                    )
+                    setShowPassword(!showPassword)
                   }
                   className="absolute right-3 top-3.5 text-gray-400"
                 >
@@ -217,14 +215,20 @@ const handleRedirect = (userData) => {
                 </button>
               </div>
 
-              {formik.touched
-                .password &&
+              {/* 🔥 FORGOT PASSWORD LINK */}
+              <div className="flex justify-end mt-2">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-orange-400 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
+              {formik.touched.password &&
                 formik.errors.password && (
                   <p className="text-red-500 text-xs mt-1">
-                    {
-                      formik.errors
-                        .password
-                    }
+                    {formik.errors.password}
                   </p>
                 )}
             </div>
@@ -242,17 +246,13 @@ const handleRedirect = (userData) => {
               disabled={loading}
               className="w-full bg-orange-500 hover:bg-orange-600 transition text-white font-semibold py-3 rounded-xl shadow-lg disabled:opacity-60"
             >
-              {loading
-                ? 'Logging in...'
-                : 'Login'}
+              {loading ? 'Logging in...' : 'Login'}
             </button>
-
           </form>
 
           {/* FOOTER */}
           <p className="text-center text-gray-400 text-sm mt-6">
             Don’t have an account?{' '}
-
             <Link
               href="/register"
               className="text-orange-500 hover:underline"
