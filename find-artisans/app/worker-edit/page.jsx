@@ -13,6 +13,7 @@ import {
 
 import API from '../axios'
 import { State, City } from 'country-state-city'
+import { lgas } from 'nigerian-states-and-lgas'
 
 const WorkerProfileEditPage = () => {
   // =========================================
@@ -76,18 +77,22 @@ const uploadImageToCloudinary = async (file) => {
       skill: '',
       hourlyRate: '',
       location: {
-  state: '',
-  city: '',
-  localGovernment: '',
-  address: '',
-},
-     profilePhoto: '',
+        state: '',
+        city: '',
+        localGovernment: '',
+        address: '',
+      },
+      profilePhoto: '',
       bio: '',
       yearsOfExperience: '',
       specialization: '',
       nin: '',
       availability: 'available',
     })
+
+  const localGovernments = formData.location.state
+    ? lgas(formData.location.state)
+    : []
 
   // =========================================
   // FETCH PROFILE
@@ -586,7 +591,7 @@ onChange={async (e) => {
       ))}
     </select>
 
-    {/* LOCAL GOVERNMENT (fallback since package doesn't fully cover LGAs) */}
+    {/* LOCAL GOVERNMENT */}
     <select
       value={formData.location.localGovernment}
       onChange={(e) =>
@@ -598,12 +603,15 @@ onChange={async (e) => {
           },
         }))
       }
+      disabled={!formData.location.state}
       className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl"
     >
       <option value="">Select Local Government</option>
-      <option value={formData.location.city}>
-        Same as city
-      </option>
+      {localGovernments.map((lga) => (
+        <option key={lga} value={lga}>
+          {lga}
+        </option>
+      ))}
     </select>
 
     {/* ADDRESS */}

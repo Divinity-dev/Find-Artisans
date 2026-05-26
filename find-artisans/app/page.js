@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { State, City } from 'country-state-city';
+import { lgas } from 'nigerian-states-and-lgas';
 import {
   FaStar,
   FaWhatsapp,
@@ -77,12 +78,8 @@ const Page = () => {
       )
     : [];
 
-  const localGovernments = selectedCity
-    ? [
-        `${selectedCity} Central`,
-        `${selectedCity} North`,
-        `${selectedCity} West`,
-      ]
+  const localGovernments = selectedState
+    ? lgas(selectedState)
     : [];
 
   const filteredArtisans = useMemo(() => {
@@ -189,6 +186,7 @@ const Page = () => {
               <select
                 value={selectedLGA}
                 onChange={(e) => setSelectedLGA(e.target.value)}
+                disabled={!selectedState}
                 className="w-full p-4 rounded-xl bg-white text-black outline-none"
               >
                 <option value="">Select Local Government</option>
