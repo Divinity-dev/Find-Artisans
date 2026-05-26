@@ -1,206 +1,165 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import API from '../axios'
+
 import {
   FaUsers,
   FaUserTie,
   FaClipboardList,
   FaWallet,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaStar,
-  FaComments,
-  FaExclamationTriangle,
-  FaChartLine,
   FaSearch,
-  FaEye,
-  FaTrash,
-  FaBan,
   FaMapMarkerAlt,
-  FaClock,
 } from 'react-icons/fa'
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview')
 
-  const stats = {
-    workers: 245,
-    customers: 890,
-    jobs: 1230,
-    revenue: '₦4.2M',
+  const [stats, setStats] = useState(null)
+  const [verifications, setVerifications] = useState([])
+  const [complaints, setComplaints] = useState([])
+  const [jobs, setJobs] = useState([])
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true)
+
+      const [statsRes, verRes, compRes, jobsRes] =
+        await Promise.all([
+          API.get('/admin/stats'),
+          API.get('/admin/verifications'),
+          API.get('/admin/complaints'),
+          API.get('/admin/jobs'),
+        ])
+
+      setStats(statsRes.data)
+
+      setVerifications(
+        Array.isArray(verRes.data)
+          ? verRes.data
+          : verRes.data?.verifications || []
+      )
+
+      setComplaints(
+        Array.isArray(compRes.data)
+          ? compRes.data
+          : compRes.data?.complaints || []
+      )
+
+      setJobs(
+        Array.isArray(jobsRes.data)
+          ? jobsRes.data
+          : jobsRes.data?.jobs || []
+      )
+
+      setError(null)
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          'Failed to load dashboard'
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const pendingWorkers = [
-    {
-      id: 1,
-      name: 'John Electric',
-      skill: 'Electrician',
-      location: 'Lekki, Lagos',
-    },
-    {
-      id: 2,
-      name: 'Sarah Plumbing',
-      skill: 'Plumber',
-      location: 'Ikeja, Lagos',
-    },
-  ]
+  useEffect(() => {
+    fetchDashboard()
+  }, [])
 
-  const complaints = [
-    {
-      id: 1,
-      worker: 'John Electric',
-      customer: 'Michael A.',
-      category: 'Non Payment',
-      message:
-        'Customer refused to pay after the work was completed.',
-      status: 'Pending',
-    },
-    {
-      id: 2,
-      worker: 'Sarah Plumbing',
-      customer: 'David K.',
-      category: 'Harassment',
-      message:
-        'Customer used abusive language during negotiation.',
-      status: 'Investigating',
-    },
-  ]
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-300">
+        Loading dashboard...
+      </div>
+    )
+  }
 
-  const jobs = [
-    {
-      id: 1,
-      title: 'Generator Repair',
-      worker: 'John Electric',
-      customer: 'Michael A.',
-      status: 'In Progress',
-      location: 'Lekki, Lagos',
-    },
-    {
-      id: 2,
-      title: 'Pipe Installation',
-      worker: 'Sarah Plumbing',
-      customer: 'Blessing O.',
-      status: 'Completed',
-      location: 'Yaba, Lagos',
-    },
-  ]
-
-  const users = [
-    {
-      id: 1,
-      name: 'John Electric',
-      role: 'Worker',
-      status: 'Verified',
-      rating: 4.8,
-    },
-    {
-      id: 2,
-      name: 'Michael A.',
-      role: 'Customer',
-      status: 'Active',
-      rating: 4.5,
-    },
-  ]
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-red-400">
+        {error}
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-5 md:p-10">
+    <div className="min-h-screen bg-gray-950 text-gray-200 p-6 md:p-10">
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-10">
 
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold">
+          <h1 className="text-3xl md:text-4xl font-bold text-white">
             Admin Dashboard
           </h1>
-
-          <p className="text-gray-500 mt-2">
-            Manage workers, customers, complaints, jobs and platform activities
+          <p className="text-gray-400 mt-2">
+            Manage workers, customers, complaints and jobs
           </p>
         </div>
 
-        <div className="bg-white px-5 py-3 rounded-2xl shadow flex items-center gap-3">
-          <FaSearch className="text-gray-400" />
-
+        <div className="bg-gray-900 border border-gray-800 px-4 py-3 rounded-xl flex items-center gap-3 w-full md:w-80">
+          <FaSearch className="text-gray-500" />
           <input
             type="text"
-            placeholder="Search users, jobs..."
-            className="outline-none"
+            placeholder="Search..."
+            className="bg-transparent outline-none w-full text-gray-200"
           />
         </div>
 
       </div>
 
       {/* STATS */}
-      <div className="grid md:grid-cols-4 gap-5 mb-8">
+      <div className="grid md:grid-cols-4 gap-5 mb-10">
 
-        <div className="bg-white rounded-3xl shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-gray-500">Workers</p>
-
-            <FaUserTie className="text-orange-500 text-2xl" />
-          </div>
-
-          <h2 className="text-3xl font-bold">
-            {stats.workers}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <FaUserTie className="text-orange-400 text-2xl" />
+          <p className="text-gray-400 mt-3">Workers</p>
+          <h2 className="text-3xl font-bold text-white">
+            {stats?.workers || 0}
           </h2>
         </div>
 
-        <div className="bg-white rounded-3xl shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-gray-500">Customers</p>
-
-            <FaUsers className="text-blue-500 text-2xl" />
-          </div>
-
-          <h2 className="text-3xl font-bold">
-            {stats.customers}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <FaUsers className="text-blue-400 text-2xl" />
+          <p className="text-gray-400 mt-3">Customers</p>
+          <h2 className="text-3xl font-bold text-white">
+            {stats?.customers || 0}
           </h2>
         </div>
 
-        <div className="bg-white rounded-3xl shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-gray-500">Total Jobs</p>
-
-            <FaClipboardList className="text-green-500 text-2xl" />
-          </div>
-
-          <h2 className="text-3xl font-bold">
-            {stats.jobs}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <FaClipboardList className="text-green-400 text-2xl" />
+          <p className="text-gray-400 mt-3">Jobs</p>
+          <h2 className="text-3xl font-bold text-white">
+            {stats?.jobs || 0}
           </h2>
         </div>
 
-        <div className="bg-white rounded-3xl shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-gray-500">Revenue</p>
-
-            <FaWallet className="text-purple-500 text-2xl" />
-          </div>
-
-          <h2 className="text-3xl font-bold">
-            {stats.revenue}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <FaWallet className="text-purple-400 text-2xl" />
+          <p className="text-gray-400 mt-3">Revenue</p>
+          <h2 className="text-3xl font-bold text-white">
+            {stats?.revenue || '₦0'}
           </h2>
         </div>
 
       </div>
 
       {/* TABS */}
-      <div className="flex flex-wrap gap-3 mb-8 overflow-x-auto">
+      <div className="flex gap-3 mb-8 flex-wrap">
 
-        {[
-          'overview',
-          'verifications',
-          'complaints',
-          'jobs',
-          'users',
-          'analytics',
-        ].map((tab) => (
+        {['overview', 'verifications', 'complaints', 'jobs'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-5 py-3 rounded-2xl capitalize whitespace-nowrap transition ${
+            className={`px-5 py-2 rounded-xl capitalize transition ${
               activeTab === tab
                 ? 'bg-orange-500 text-white'
-                : 'bg-white shadow'
+                : 'bg-gray-900 border border-gray-800 text-gray-300'
             }`}
           >
             {tab}
@@ -209,419 +168,93 @@ const AdminDashboard = () => {
 
       </div>
 
-      {/* OVERVIEW */}
+      {/* ===================== OVERVIEW ===================== */}
       {activeTab === 'overview' && (
         <div className="grid md:grid-cols-2 gap-6">
 
-          <div className="bg-white rounded-3xl shadow p-6">
+          {/* VERIFICATIONS */}
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+            <h2 className="text-xl font-bold text-white mb-5">
+              Pending Verifications
+            </h2>
 
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-2xl font-bold">
-                Pending Worker Verifications
-              </h2>
+            {verifications.map(v => (
+              <div key={v._id} className="border border-gray-800 rounded-xl p-4 mb-4">
+                <h3 className="text-white font-semibold">{v.name}</h3>
+                <p className="text-orange-400">{v.skill}</p>
 
-              <FaCheckCircle className="text-green-500 text-2xl" />
-            </div>
+                <p className="text-gray-400 flex items-center gap-2 mt-2">
+                  <FaMapMarkerAlt />
+                  {v.location}
+                </p>
 
-            <div className="space-y-5">
-
-              {pendingWorkers.map((worker) => (
-                <div
-                  key={worker.id}
-                  className="border rounded-2xl p-5"
-                >
-
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-
-                    <div>
-                      <h3 className="text-xl font-bold">
-                        {worker.name}
-                      </h3>
-
-                      <p className="text-orange-500 mt-1">
-                        {worker.skill}
-                      </p>
-
-                      <p className="text-gray-500 flex items-center gap-2 mt-2">
-                        <FaMapMarkerAlt />
-                        {worker.location}
-                      </p>
-                    </div>
-
-                    <div className="flex gap-3">
-
-                      <button className="bg-green-500 text-white px-5 py-3 rounded-xl">
-                        Approve
-                      </button>
-
-                      <button className="bg-red-500 text-white px-5 py-3 rounded-xl">
-                        Reject
-                      </button>
-
-                    </div>
-
-                  </div>
-
-                </div>
-              ))}
-
-            </div>
-
-          </div>
-
-          <div className="bg-white rounded-3xl shadow p-6">
-
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-2xl font-bold">
-                Recent Complaints
-              </h2>
-
-              <FaExclamationTriangle className="text-red-500 text-2xl" />
-            </div>
-
-            <div className="space-y-5">
-
-              {complaints.map((complaint) => (
-                <div
-                  key={complaint.id}
-                  className="border rounded-2xl p-5"
-                >
-
-                  <div className="flex items-start justify-between mb-3">
-
-                    <div>
-                      <h3 className="font-bold text-lg">
-                        {complaint.category}
-                      </h3>
-
-                      <p className="text-gray-500 mt-1">
-                        Worker: {complaint.worker}
-                      </p>
-
-                      <p className="text-gray-500">
-                        Customer: {complaint.customer}
-                      </p>
-                    </div>
-
-                    <span className="bg-yellow-100 text-yellow-600 px-3 py-1 rounded-full text-sm">
-                      {complaint.status}
-                    </span>
-
-                  </div>
-
-                  <p className="text-gray-700">
-                    {complaint.message}
-                  </p>
-
-                </div>
-              ))}
-
-            </div>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* VERIFICATIONS */}
-      {activeTab === 'verifications' && (
-        <div className="space-y-5">
-
-          {pendingWorkers.map((worker) => (
-            <div
-              key={worker.id}
-              className="bg-white rounded-3xl shadow p-6"
-            >
-
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-
-                <div>
-                  <h2 className="text-2xl font-bold">
-                    {worker.name}
-                  </h2>
-
-                  <p className="text-orange-500 mt-2">
-                    {worker.skill}
-                  </p>
-
-                  <p className="text-gray-500 mt-2">
-                    {worker.location}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-
-                  <button className="bg-blue-500 text-white px-5 py-3 rounded-xl flex items-center gap-2">
-                    <FaEye />
-                    View Documents
-                  </button>
-
-                  <button className="bg-green-500 text-white px-5 py-3 rounded-xl">
+                <div className="flex gap-3 mt-4">
+                  <button className="bg-green-500 text-white px-4 py-2 rounded-lg">
                     Approve
                   </button>
-
-                  <button className="bg-red-500 text-white px-5 py-3 rounded-xl">
+                  <button className="bg-red-500 text-white px-4 py-2 rounded-lg">
                     Reject
                   </button>
-
                 </div>
-
               </div>
+            ))}
+          </div>
 
-            </div>
-          ))}
+          {/* COMPLAINTS */}
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+            <h2 className="text-xl font-bold text-white mb-5">
+              Complaints
+            </h2>
+
+            {complaints.map(c => (
+              <div key={c._id} className="border border-gray-800 rounded-xl p-4 mb-4">
+                <h3 className="text-white font-semibold">
+                  {c.category}
+                </h3>
+
+                <p className="text-gray-400 mt-2">
+                  {c.message}
+                </p>
+
+                <span className="text-yellow-400 text-sm">
+                  {c.status}
+                </span>
+              </div>
+            ))}
+          </div>
 
         </div>
       )}
 
-      {/* COMPLAINTS */}
-      {activeTab === 'complaints' && (
-        <div className="space-y-5">
-
-          {complaints.map((complaint) => (
-            <div
-              key={complaint.id}
-              className="bg-white rounded-3xl shadow p-6"
-            >
-
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
-
-                <div className="max-w-3xl">
-
-                  <div className="flex items-center gap-3 mb-3">
-
-                    <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-medium">
-                      {complaint.category}
-                    </span>
-
-                    <span className="bg-yellow-100 text-yellow-600 px-3 py-1 rounded-full text-sm font-medium">
-                      {complaint.status}
-                    </span>
-
-                  </div>
-
-                  <h2 className="text-xl font-bold mb-2">
-                    Complaint Against {complaint.customer}
-                  </h2>
-
-                  <p className="text-gray-500 mb-3">
-                    Submitted by {complaint.worker}
-                  </p>
-
-                  <p className="text-gray-700">
-                    {complaint.message}
-                  </p>
-
-                </div>
-
-                <div className="flex flex-col gap-3">
-
-                  <button className="bg-blue-500 text-white px-5 py-3 rounded-xl">
-                    Investigate
-                  </button>
-
-                  <button className="bg-red-500 text-white px-5 py-3 rounded-xl flex items-center gap-2">
-                    <FaBan />
-                    Suspend Customer
-                  </button>
-
-                  <button className="bg-gray-200 px-5 py-3 rounded-xl">
-                    Resolve
-                  </button>
-
-                </div>
-
-              </div>
-
-            </div>
-          ))}
-
-        </div>
-      )}
-
-      {/* JOBS */}
+      {/* ===================== JOBS ===================== */}
       {activeTab === 'jobs' && (
-        <div className="space-y-5">
+        <div className="space-y-4">
 
-          {jobs.map((job) => (
-            <div
-              key={job.id}
-              className="bg-white rounded-3xl shadow p-6"
-            >
+          {jobs.map(job => (
+            <div key={job._id} className="bg-gray-900 border border-gray-800 p-5 rounded-xl">
 
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+              <h2 className="text-white font-bold text-lg">
+                {job.title}
+              </h2>
 
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">
-                    {job.title}
-                  </h2>
+              <p className="text-gray-400">
+  Worker: {typeof job.worker === 'object'
+    ? job.worker?.fullName
+    : job.worker}
+</p>
 
-                  <div className="space-y-2 text-gray-500">
-                    <p>Worker: {job.worker}</p>
-                    <p>Customer: {job.customer}</p>
+<p className="text-gray-400">
+  Customer: {typeof job.customer === 'object'
+    ? job.customer?.fullName
+    : job.customer}
+</p>
 
-                    <p className="flex items-center gap-2">
-                      <FaMapMarkerAlt />
-                      {job.location}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-start md:items-end gap-4">
-
-                  <span className={`px-4 py-2 rounded-full font-medium ${
-                    job.status === 'Completed'
-                      ? 'bg-green-100 text-green-600'
-                      : 'bg-blue-100 text-blue-600'
-                  }`}>
-                    {job.status}
-                  </span>
-
-                  <div className="flex gap-3">
-
-                    <button className="bg-blue-500 text-white px-5 py-3 rounded-xl">
-                      View
-                    </button>
-
-                    <button className="bg-red-500 text-white px-5 py-3 rounded-xl">
-                      Cancel Job
-                    </button>
-
-                  </div>
-
-                </div>
-
-              </div>
+              <span className="text-blue-400 text-sm">
+                {job.status}
+              </span>
 
             </div>
           ))}
-
-        </div>
-      )}
-
-      {/* USERS */}
-      {activeTab === 'users' && (
-        <div className="space-y-5">
-
-          {users.map((user) => (
-            <div
-              key={user.id}
-              className="bg-white rounded-3xl shadow p-6"
-            >
-
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-
-                <div>
-
-                  <div className="flex items-center gap-3 mb-2">
-
-                    <h2 className="text-2xl font-bold">
-                      {user.name}
-                    </h2>
-
-                    <span className="bg-gray-100 px-3 py-1 rounded-full text-sm">
-                      {user.role}
-                    </span>
-
-                  </div>
-
-                  <div className="flex items-center gap-3 text-gray-500">
-
-                    <span>
-                      {user.status}
-                    </span>
-
-                    <span className="flex items-center gap-1 text-yellow-500">
-                      <FaStar />
-                      {user.rating}
-                    </span>
-
-                  </div>
-
-                </div>
-
-                <div className="flex gap-3">
-
-                  <button className="bg-blue-500 text-white px-5 py-3 rounded-xl">
-                    View Profile
-                  </button>
-
-                  <button className="bg-yellow-500 text-white px-5 py-3 rounded-xl">
-                    Warn
-                  </button>
-
-                  <button className="bg-red-500 text-white px-5 py-3 rounded-xl flex items-center gap-2">
-                    <FaTrash />
-                    Remove
-                  </button>
-
-                </div>
-
-              </div>
-
-            </div>
-          ))}
-
-        </div>
-      )}
-
-      {/* ANALYTICS */}
-      {activeTab === 'analytics' && (
-        <div className="grid md:grid-cols-3 gap-6">
-
-          <div className="bg-white rounded-3xl shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-gray-500">
-                Daily Active Users
-              </p>
-
-              <FaChartLine className="text-green-500 text-2xl" />
-            </div>
-
-            <h2 className="text-4xl font-bold">
-              1,240
-            </h2>
-
-            <p className="text-green-500 mt-3">
-              +12% this week
-            </p>
-          </div>
-
-          <div className="bg-white rounded-3xl shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-gray-500">
-                Jobs Completed
-              </p>
-
-              <FaClipboardList className="text-orange-500 text-2xl" />
-            </div>
-
-            <h2 className="text-4xl font-bold">
-              840
-            </h2>
-
-            <p className="text-green-500 mt-3">
-              +18% this month
-            </p>
-          </div>
-
-          <div className="bg-white rounded-3xl shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-gray-500">
-                Complaint Resolution
-              </p>
-
-              <FaComments className="text-blue-500 text-2xl" />
-            </div>
-
-            <h2 className="text-4xl font-bold">
-              92%
-            </h2>
-
-            <p className="text-green-500 mt-3">
-              Excellent resolution rate
-            </p>
-          </div>
 
         </div>
       )}

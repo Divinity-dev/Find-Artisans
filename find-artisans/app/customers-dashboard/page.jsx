@@ -1,327 +1,394 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import Link from 'next/link'
 import {
-  FaSearch,
   FaMapMarkerAlt,
   FaStar,
   FaCheckCircle,
-  FaComments,
   FaClipboardList,
 } from 'react-icons/fa'
-import Link from 'next/link'
+
+import API from '../axios'
 
 const CustomerDashboard = () => {
-  const [activeTab, setActiveTab] = useState('requests')
+  // =========================
+  // STATES
+  // =========================
+  const [activeTab, setActiveTab] = useState('jobs')
+  const [loading, setLoading] = useState(false)
+  const [searchingWorkers, setSearchingWorkers] = useState(false)
+  const [error, setError] = useState('')
+
+  const [profile, setProfile] = useState(null)
+  const [jobs, setJobs] = useState([])
+  const [workers, setWorkers] = useState([])
+  const [myComplaints, setMyComplaints] = useState([])
+
+  const [searchFilters, setSearchFilters] = useState({
+    skill: '',
+    state: '',
+    city: '',
+    lga: '',
+  })
 
   const [complaint, setComplaint] = useState({
     category: '',
     message: '',
   })
 
-  const requests = [
-    {
-      id: 1,
-      title: 'Need electrician for unstable wiring',
-      status: 'Pending',
-      location: 'Lekki, Lagos',
-      time: '2 hours ago',
-    },
-    {
-      id: 2,
-      title: 'Kitchen plumbing repair',
-      status: 'Completed',
-      location: 'Ikeja, Lagos',
-      time: '1 day ago',
-    },
-  ]
+  // =========================
+  // REVIEW STATE
+  // =========================
+  const [reviewModal, setReviewModal] = useState(false)
+  const [selectedJob, setSelectedJob] = useState(null)
+  const [review, setReview] = useState({ rating: 0, comment: '' })
 
-  const workers = [
-    {
-      id: 1,
-      name: 'John Electric',
-      skill: 'Electrician',
-      rating: 4.9,
-      jobs: 42,
-      location: 'Ikeja, Lagos',
-      verified: true,
-    },
-    {
-      id: 2,
-      name: 'Swift Plumbing',
-      skill: 'Plumber',
-      rating: 4.7,
-      jobs: 31,
-      location: 'Lekki, Lagos',
-      verified: true,
-    },
-  ]
+  // =========================
+  // SAFE GET
+  // =========================
+  const safeGet = async (url, setter, fallback = []) => {
+    try {
+      const res = await API.get(url)
 
+      const data =
+        res?.data?.data ||
+        res?.data?.jobs ||
+        res?.data?.workers ||
+        res?.data?.complaints ||
+        res?.data ||
+        fallback
+
+      setter(Array.isArray(data) ? data : fallback)
+    } catch (err) {
+      console.log(err)
+      setter(fallback)
+    }
+  }
+
+  // =========================
+  // FETCH
+  // =========================
+  const fetchProfile = async () => {
+    try {
+      const res = await API.get('/users/me')
+      setProfile(res?.data?.data || res?.data?.user || res?.data)
+    } catch {
+      setError('Failed to load profile')
+    }
+  }
+
+  const fetchJobs = () => safeGet('/jobs/me', setJobs, [])
+  const fetchMyComplaints = () => safeGet('/complaints/my', setMyComplaints, [])
+
+  // =========================
+  // SEARCH WORKERS
+  // =========================
+  const searchWorkers = async () => {
+    try {
+      setSearchingWorkers(true)
+
+      const res = await API.get('/users/workers/search', {
+        params: searchFilters,
+      })
+
+      const data =
+        res?.data?.data ||
+        res?.data?.workers ||
+        res?.data ||
+        []
+
+      setWorkers(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.log(err)
+      setWorkers([])
+    } finally {
+      setSearchingWorkers(false)
+    }
+  }
+
+  // =========================
+  // COMPLAINT
+  // =========================
+  const submitComplaint = async () => {
+    try {
+      if (!complaint.category || !complaint.message) {
+        alert('Please fill all fields')
+        return
+      }
+
+      await API.post('/complaints', complaint)
+      alert('Complaint submitted successfully')
+
+      setComplaint({ category: '', message: '' })
+      fetchMyComplaints()
+    } catch (err) {
+      console.log(err)
+      alert('Failed to submit complaint')
+    }
+  }
+
+  // =========================
+  // REVIEW LOGIC
+  // =========================
+  const openReview = (job) => {
+    setSelectedJob(job)
+    setReview({ rating: 0, comment: '' })
+    setReviewModal(true)
+  }
+
+  const submitReview = async () => {
+    try {
+      if (!selectedJob) return
+
+      if (!review.rating || !review.comment) {
+        alert('Please add rating and comment')
+        return
+      }
+
+      await API.post('/reviews', {
+        jobId: selectedJob._id,
+        workerId: selectedJob.worker,
+        rating: review.rating,
+        comment: review.comment,
+      })
+
+      alert('Review submitted successfully')
+
+      setReviewModal(false)
+      setSelectedJob(null)
+      setReview({ rating: 0, comment: '' })
+    } catch (err) {
+      console.log(err)
+      alert('Failed to submit review')
+    }
+  }
+
+  // =========================
+  // LOAD DASHBOARD
+  // =========================
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      setError('')
+
+      await Promise.all([
+        fetchProfile(),
+        fetchJobs(),
+        fetchMyComplaints(),
+      ])
+
+      setLoading(false)
+    }
+
+    load()
+  }, [])
+
+  // =========================
+  // STATUS STYLE
+  // =========================
+  const renderStatus = (job) => {
+    const map = {
+      completed: 'bg-green-600/20 text-green-400',
+      'in-progress': 'bg-blue-600/20 text-blue-400',
+      assigned: 'bg-purple-600/20 text-purple-400',
+    }
+
+    return map[job.status] || 'bg-yellow-600/20 text-yellow-400'
+  }
+
+  const renderComplaintStatus = (status) => {
+    const map = {
+      resolved: 'bg-green-600/20 text-green-400',
+      rejected: 'bg-red-600/20 text-red-400',
+    }
+
+    return map[status] || 'bg-yellow-600/20 text-yellow-400'
+  }
+
+  // =========================
+  // UI
+  // =========================
   return (
     <div className="min-h-screen bg-gray-950 text-white p-5 md:p-10">
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-
+      <div className="flex flex-col md:flex-row justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold">
-            Customer Dashboard
-          </h1>
-          <p className="text-gray-400 mt-2">
-            Find trusted artisans near you
+          <h1 className="text-3xl font-bold">Customer Dashboard</h1>
+          <p className="text-gray-400">
+            Welcome {profile?.fullName || 'Customer'}
           </p>
         </div>
 
-        <div className="flex gap-4 flex-col md:flex-row">
+       <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+  
+  <Link
+    href="/customer-edit"
+    className="group flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 px-5 py-3 rounded-2xl transition-all duration-200 text-sm font-medium text-gray-200"
+  >
+    <span className="w-2 h-2 rounded-full bg-gray-500 group-hover:bg-gray-300 transition"></span>
+    Edit Profile
+  </Link>
 
-          <Link
-            href="/customer-edit"
-            className="bg-gray-800 border border-gray-700 hover:bg-gray-700 px-5 py-3 rounded-xl"
-          >
-            Edit Profile
-          </Link>
+  <Link
+    href="/post-job"
+    className="relative overflow-hidden flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 px-6 py-3 rounded-2xl font-semibold transition-all duration-200 text-sm text-white shadow-lg shadow-orange-500/20"
+  >
+    <span className="w-2 h-2 rounded-full bg-white/70"></span>
+    Post Job
 
-          <button className="bg-orange-500 hover:bg-orange-600 px-5 py-3 rounded-xl font-medium">
-            Post New Request
-          </button>
-        </div>
-      </div>
+    {/* subtle glow effect */}
+    <span className="absolute inset-0 opacity-0 hover:opacity-100 transition bg-white/10"></span>
+  </Link>
 
-      {/* SEARCH */}
-      <div className="bg-gray-900 border border-gray-800 p-5 rounded-3xl mb-8">
-
-        <div className="grid md:grid-cols-4 gap-4">
-
-          <input
-            type="text"
-            placeholder="What service do you need?"
-            className="bg-gray-800 border border-gray-700 p-4 rounded-xl text-white outline-none md:col-span-2"
-          />
-
-          <input
-            type="text"
-            placeholder="Location"
-            className="bg-gray-800 border border-gray-700 p-4 rounded-xl text-white outline-none"
-          />
-
-          <button className="bg-orange-500 hover:bg-orange-600 rounded-xl flex items-center justify-center gap-2 font-medium">
-            <FaSearch />
-            Search
-          </button>
-        </div>
+</div>
       </div>
 
       {/* TABS */}
-      <div className="flex flex-wrap gap-3 mb-6">
-
-        {['requests', 'workers', 'messages', 'complaints'].map((tab) => (
+      <div className="flex gap-3 mb-8 flex-wrap">
+        {['jobs', 'find-workers', 'create-complaint', 'my-complaints'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-5 py-3 rounded-xl capitalize border transition ${
-              activeTab === tab
-                ? 'bg-orange-500 border-orange-500 text-white'
-                : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-600'
+            className={`px-4 py-2 rounded-xl ${
+              activeTab === tab ? 'bg-orange-500' : 'bg-gray-800'
             }`}
           >
-            {tab}
+            {tab.replace('-', ' ')}
           </button>
         ))}
       </div>
 
-      {/* REQUESTS */}
-      {activeTab === 'requests' && (
-        <div className="space-y-5">
+      {loading && <p className="text-gray-400">Loading...</p>}
+      {error && <p className="text-red-400">{error}</p>}
 
-          {requests.map((request) => (
-            <div
-              key={request.id}
-              className="bg-gray-900 border border-gray-800 p-6 rounded-3xl"
-            >
+      {/* ========================= JOBS ========================= */}
+      {activeTab === 'jobs' && (
+        <div className="space-y-4">
+          {jobs.length === 0 ? (
+            <div className="bg-gray-900 p-6 rounded-3xl">
+              <p className="text-gray-400">No jobs found yet.</p>
+            </div>
+          ) : (
+            jobs.map(job => (
+              <div key={job._id} className="bg-gray-900 p-6 rounded-3xl border border-gray-800">
 
-              <div className="flex flex-col md:flex-row justify-between gap-4">
+                <div className="flex justify-between">
+                  <div>
+                    <h2 className="font-bold text-lg">{job.title}</h2>
+                    <p className="text-gray-400 flex items-center gap-2">
+                      <FaMapMarkerAlt /> {job.location}
+                    </p>
+                  </div>
 
-                <div>
-                  <h2 className="text-xl font-bold mb-2">
-                    {request.title}
-                  </h2>
-
-                  <p className="text-gray-400 flex items-center gap-2 text-sm">
-                    <FaMapMarkerAlt />
-                    {request.location}
-                  </p>
-
-                  <p className="text-gray-500 text-sm mt-1">
-                    Posted {request.time}
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-start md:items-end gap-3">
-
-                  <span className={`px-4 py-2 rounded-full text-sm font-medium ${
-                    request.status === 'Completed'
-                      ? 'bg-green-600/20 text-green-400'
-                      : 'bg-yellow-600/20 text-yellow-400'
-                  }`}>
-                    {request.status}
+                  <span className={`px-3 py-1 rounded-full ${renderStatus(job)}`}>
+                    {job.status}
                   </span>
+                </div>
 
-                  <button className="bg-orange-500 px-5 py-2 rounded-xl">
-                    View Details
+                {job.status === 'completed' && job.worker && (
+                  <button
+                    onClick={() => openReview(job)}
+                    className="mt-3 bg-orange-500 px-4 py-2 rounded-xl"
+                  >
+                    Leave Review
                   </button>
-                </div>
-
+                )}
               </div>
-            </div>
-          ))}
-
+            ))
+          )}
         </div>
       )}
 
-      {/* WORKERS */}
-      {activeTab === 'workers' && (
-        <div className="grid md:grid-cols-2 gap-6">
+      {/* ========================= FIND WORKERS (RESTORED) ========================= */}
+      {activeTab === 'find-workers' && (
+        <div>
 
-          {workers.map((worker) => (
-            <div
-              key={worker.id}
-              className="bg-gray-900 border border-gray-800 p-6 rounded-3xl"
-            >
+          <div className="bg-gray-900 p-6 rounded-3xl mb-6">
+            <h2 className="text-xl font-bold mb-4">Search Workers</h2>
 
-              <div className="flex justify-between mb-4">
-
-                <div>
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    {worker.name}
-                    {worker.verified && (
-                      <FaCheckCircle className="text-green-500" />
-                    )}
-                  </h2>
-
-                  <p className="text-orange-400 font-medium">
-                    {worker.skill}
-                  </p>
-                </div>
-
-                <div className="text-yellow-400 font-bold flex items-center gap-1">
-                  <FaStar />
-                  {worker.rating}
-                </div>
-
-              </div>
-
-              <div className="text-gray-400 space-y-2 mb-5 text-sm">
-                <p className="flex items-center gap-2">
-                  <FaMapMarkerAlt />
-                  {worker.location}
-                </p>
-
-                <p className="flex items-center gap-2">
-                  <FaClipboardList />
-                  {worker.jobs} Jobs Completed
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-
-                <button className="flex-1 bg-orange-500 py-3 rounded-xl">
-                  View Profile
-                </button>
-
-                <button className="flex-1 bg-green-600 py-3 rounded-xl flex items-center justify-center gap-2">
-                  <FaComments />
-                  Contact
-                </button>
-
-              </div>
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+           {Object.keys(searchFilters).map((key) => (
+  <input
+    key={key}
+    placeholder={key}
+    value={searchFilters[key]}
+    onChange={(e) =>
+      setSearchFilters({
+        ...searchFilters,
+        [key]: e.target.value,
+      })
+    }
+    className="w-full bg-gray-800 border border-gray-700 px-3 py-4 rounded-xl text-sm outline-none focus:border-orange-500"
+  />
+))}
             </div>
-          ))}
-
-        </div>
-      )}
-
-      {/* MESSAGES */}
-      {activeTab === 'messages' && (
-        <div className="bg-gray-900 border border-gray-800 p-6 rounded-3xl">
-
-          <h2 className="text-2xl font-bold mb-5">
-            Messages
-          </h2>
-
-          <div className="border border-gray-800 rounded-2xl p-5 flex justify-between items-center">
-
-            <div>
-              <h3 className="font-semibold">John Electric</h3>
-              <p className="text-gray-400 text-sm">
-                I can inspect the wiring tomorrow morning.
-              </p>
-            </div>
-
-            <button className="bg-orange-500 px-5 py-2 rounded-xl">
-              Open Chat
-            </button>
-          </div>
-
-        </div>
-      )}
-
-      {/* COMPLAINTS */}
-      {activeTab === 'complaints' && (
-        <div className="bg-gray-900 border border-gray-800 p-6 rounded-3xl max-w-5xl">
-
-          <h2 className="text-2xl font-bold mb-2">
-            Report Complaint
-          </h2>
-
-          <p className="text-gray-400 mb-6">
-            Submit a complaint about a worker or service.
-          </p>
-
-          <select
-            value={complaint.category}
-            onChange={(e) =>
-              setComplaint({ ...complaint, category: e.target.value })
-            }
-            className="w-full bg-gray-800 border border-gray-700 p-4 rounded-xl mb-4"
-          >
-            <option value="">Select Category</option>
-            <option>Fraud</option>
-            <option>Harassment</option>
-            <option>Non Payment</option>
-            <option>Fake Job</option>
-            <option>Unsafe Environment</option>
-            <option>Abusive Behavior</option>
-            <option>Other</option>
-          </select>
-
-          <textarea
-            rows={6}
-            placeholder="Describe the issue..."
-            value={complaint.message}
-            onChange={(e) =>
-              setComplaint({ ...complaint, message: e.target.value })
-            }
-            className="w-full bg-gray-800 border border-gray-700 p-4 rounded-xl mb-4"
-          />
-
-          <div className="flex gap-4">
-
-            <button className="bg-orange-500 px-6 py-3 rounded-xl">
-              Submit
-            </button>
 
             <button
-              onClick={() =>
-                setComplaint({ category: '', message: '' })
-              }
-              className="bg-gray-800 border border-gray-700 px-6 py-3 rounded-xl"
+              onClick={searchWorkers}
+              className="mt-4 bg-orange-500 px-4 py-2 rounded-xl"
             >
-              Clear
+              {searchingWorkers ? 'Searching...' : 'Search'}
             </button>
-
           </div>
 
+          <div className="grid md:grid-cols-2 gap-4">
+            {workers.map(worker => (
+              <div key={worker._id} className="bg-gray-900 p-5 rounded-3xl">
+                <h3 className="font-bold flex items-center gap-2">
+                  {worker.fullName}
+                  {worker?.verification?.isVerified && (
+                    <FaCheckCircle className="text-green-500" />
+                  )}
+                </h3>
+
+                <p className="text-orange-400">{worker.skill}</p>
+                <p className="text-gray-400">{worker.location}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ========================= REVIEW MODAL ========================= */}
+      {reviewModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md">
+
+            <h2 className="text-xl font-bold mb-4">Leave Review</h2>
+
+            <div className="flex gap-2 mb-4">
+              {[1,2,3,4,5].map(star => (
+                <FaStar
+                  key={star}
+                  onClick={() => setReview({ ...review, rating: star })}
+                  className={`cursor-pointer ${
+                    review.rating >= star ? 'text-yellow-400' : 'text-gray-600'
+                  }`}
+                />
+              ))}
+            </div>
+
+            <textarea
+              value={review.comment}
+              onChange={(e) =>
+                setReview({ ...review, comment: e.target.value })
+              }
+              className="w-full p-3 bg-gray-800 rounded-xl"
+              rows={4}
+            />
+
+            <div className="flex gap-3 mt-4">
+              <button onClick={submitReview} className="bg-orange-500 flex-1 py-2 rounded-xl">
+                Submit
+              </button>
+
+              <button onClick={() => setReviewModal(false)} className="bg-gray-700 flex-1 py-2 rounded-xl">
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
