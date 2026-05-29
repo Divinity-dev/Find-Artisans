@@ -39,8 +39,15 @@ const LoginPage = () => {
   // =========================
   // REDIRECT USER
   // =========================
+  const normalizeRole = (inputRole) => {
+    if (!inputRole) return '';
+    return String(inputRole).toLowerCase();
+  };
+
   const handleRedirect = (userData) => {
-    const role = userData?.user?.role;
+    const user =
+      userData?.user || userData?.data?.user || userData?.data || userData;
+    const role = normalizeRole(user?.role);
 
     if (role === 'admin') {
       router.push('/admin');
@@ -98,6 +105,18 @@ Cookies.set('role', data.user.role, {
             'token',
             data.token
           );
+        }
+
+        const role = data?.user?.role || data?.role;
+
+        if (role) {
+          Cookies.set('role', role, {
+            expires: 7,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+          });
+        } else {
+          Cookies.remove('role');
         }
 
         dispatch(loginSuccess(data));

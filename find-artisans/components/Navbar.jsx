@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '@/redux/slices/authSlice';
 import Cookies from 'js-cookie'
@@ -24,6 +23,8 @@ const Navbar = () => {
 
   // ✅ REAL AUTH STATE (NOT HARD CODED)
   const { user } = useSelector((state) => state.auth);
+
+  
 
   const isLoggedIn = !!user;
 
@@ -93,16 +94,17 @@ const Navbar = () => {
                   href="/profile"
                   className="flex items-center gap-2"
                 >
-                  {user.image ? (
-                    <Image
-                      src={user.image}
-                      alt="profile"
-                      width={32}
-                      height={32}
-                      className="rounded-full object-cover border border-gray-700"
+                  {user.profilePhoto ? (
+                    <img
+                      src={user.profilePhoto}
+                      alt={user.fullName || 'profile'}
+                      className="w-9 h-9 rounded-full object-cover border-2 border-gray-700 shadow-sm"
+                      loading="lazy"
                     />
                   ) : (
-                    <UserCircle size={22} className="text-gray-300" />
+                    <div className="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center border-2 border-gray-700">
+                      <UserCircle size={18} className="text-gray-300" />
+                    </div>
                   )}
                 </Link>
 
@@ -171,16 +173,17 @@ const Navbar = () => {
                 className="flex items-center gap-2 text-gray-300"
                 onClick={() => setIsOpen(false)}
               >
-                {user.image ? (
-                  <Image
-                    src={user.image}
-                    alt="profile"
-                    width={24}
-                    height={24}
-                    className="rounded-full"
+                {user.profilePhoto ? (
+                  <img
+                    src={user.profilePhoto}
+                    alt={user.fullName || 'profile'}
+                    className="w-7 h-7 rounded-full object-cover"
+                    loading="lazy"
                   />
                 ) : (
-                  <UserCircle size={18} />
+                  <div className="w-7 h-7 rounded-full bg-gray-800 flex items-center justify-center">
+                    <UserCircle size={16} />
+                  </div>
                 )}
                 Profile
               </Link>

@@ -32,22 +32,28 @@ export function middleware(request) {
   // BLOCK LOGGED-IN USERS FROM AUTH PAGES
   // ======================================
   if (token && authPages.includes(pathname)) {
+    const normalizedRole = role?.toLowerCase();
 
-    if (role === 'admin') {
+    if (normalizedRole === 'admin') {
       return NextResponse.redirect(
         new URL('/admin', request.url)
       )
     }
 
-    if (role === 'worker') {
+    if (normalizedRole === 'worker') {
       return NextResponse.redirect(
         new URL('/workers-dashboard', request.url)
       )
     }
 
-    return NextResponse.redirect(
-      new URL('/customers-dashboard', request.url)
-    )
+    if (normalizedRole === 'customer') {
+      return NextResponse.redirect(
+        new URL('/customers-dashboard', request.url)
+      )
+    }
+
+    // if token exists but role is invalid, allow access to auth pages
+    return NextResponse.next()
   }
 
   // ======================================
