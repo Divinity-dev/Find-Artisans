@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { State, City } from 'country-state-city';
+import { lgas } from 'nigerian-states-and-lgas';
 import {
   FaStar,
   FaWhatsapp,
@@ -16,6 +17,7 @@ const Page = () => {
   const [searchName, setSearchName] = useState('');
   const [selectedState, setSelectedState] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
+  const [selectedLGA, setSelectedLGA] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   const artisans = [
@@ -66,6 +68,10 @@ const Page = () => {
       )
     : [];
 
+  const localGovernments = selectedState
+    ? lgas(selectedState)
+    : [];
+
   const filtered = useMemo(() => {
     return artisans.filter((a) => {
       const matchName =
@@ -74,10 +80,11 @@ const Page = () => {
 
       const matchState = selectedState ? a.state === selectedState : true;
       const matchCity = selectedCity ? a.city === selectedCity : true;
+      const matchLGA = selectedLGA ? a.localGovernment === selectedLGA : true;
 
-      return matchName && matchState && matchCity;
+      return matchName && matchState && matchCity && matchLGA;
     });
-  }, [searchName, selectedState, selectedCity]);
+  }, [searchName, selectedState, selectedCity, selectedLGA]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -102,13 +109,13 @@ const Page = () => {
         </button>
 
         {showFilters && (
-          <div className="grid md:grid-cols-3 gap-4 mt-4 bg-gray-900 border border-gray-800 p-4 rounded-xl">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 bg-gray-900 border border-gray-800 p-4 rounded-xl">
 
             <input
               placeholder="Search artisan or category"
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
-              className="p-3 bg-gray-800 border border-gray-700 rounded-lg"
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg"
             />
 
             <select
@@ -116,23 +123,43 @@ const Page = () => {
               onChange={(e) => {
                 setSelectedState(e.target.value);
                 setSelectedCity('');
+                setSelectedLGA('');
               }}
-              className="p-3 bg-gray-800 border border-gray-700 rounded-lg"
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg"
             >
               <option value="">Select State</option>
               {nigeriaStates.map((s) => (
-                <option key={s.isoCode}>{s.name}</option>
+                <option key={s.isoCode} value={s.name}>
+                  {s.name}
+                </option>
               ))}
             </select>
 
             <select
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
-              className="p-3 bg-gray-800 border border-gray-700 rounded-lg"
+              disabled={!selectedState}
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg"
             >
               <option value="">Select City</option>
               {cities.map((c, i) => (
-                <option key={i}>{c.name}</option>
+                <option key={i} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedLGA}
+              onChange={(e) => setSelectedLGA(e.target.value)}
+              disabled={!selectedState}
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg"
+            >
+              <option value="">Select Local Government</option>
+              {localGovernments.map((lga, i) => (
+                <option key={i} value={lga}>
+                  {lga}
+                </option>
               ))}
             </select>
 
