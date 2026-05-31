@@ -126,20 +126,21 @@ const AdminDashboard = () => {
         Admin Dashboard
       </h1>
 
-      {/* TABS */}
-      <div className="flex gap-3 flex-wrap mb-8">
-        {['stats','verifications','workers','customers','complaints','jobs'].map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-lg capitalize ${
-              activeTab === tab ? 'bg-orange-500' : 'bg-gray-900'
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+     
+{/* TABS */}
+<div className="w-full flex mb-8 gap-2 bg-gray-900 p-2 rounded-xl">
+  {['stats','verifications','workers','customers','complaints','jobs'].map(tab => (
+    <button
+      key={tab}
+      onClick={() => setActiveTab(tab)}
+      className={`flex-1 px-4 py-2 rounded-lg capitalize text-center transition ${
+        activeTab === tab ? 'bg-orange-500 text-white' : 'bg-gray-800'
+      }`}
+    >
+      {tab}
+    </button>
+  ))}
+</div>
 
       {/* ========================= STATS ========================= */}
       {activeTab === 'stats' && (
