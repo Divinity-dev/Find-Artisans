@@ -92,7 +92,7 @@ const AdminDashboard = () => {
   // =========================
   const updateComplaintStatus = async (id, status) => {
     try {
-      await API.patch(`/admin/complaints/${id}/status`, { status })
+      await API.patch(`/complaints/${id}`, { status })
 
       setComplaints((prev) =>
         prev.map((c) => (c._id === id ? { ...c, status } : c))

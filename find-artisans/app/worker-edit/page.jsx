@@ -22,6 +22,12 @@ const WorkerProfileEditPage = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [portfolioForm, setPortfolioForm] = useState({
+  title: '',
+  location: '',
+  image: '',
+  description: '',
+})
 
   const [governmentId, setGovernmentId] =
     useState(null)
@@ -33,10 +39,35 @@ const WorkerProfileEditPage = () => {
 
   const [skills, setSkills] = useState([])
 
-  const [portfolio, setPortfolio] =
-    useState([])
-
     const [verifying, setVerifying] = useState(false);
+
+    const addPortfolioItem = async () => {
+      try {
+        if (!portfolioForm.title || !portfolioForm.description) {
+          alert('Title and description required')
+          return
+        }
+
+        await API.post('/portfolio', {
+          title: portfolioForm.title,
+          location: portfolioForm.location,
+          image: portfolioForm.image,
+          description: portfolioForm.description,
+        })
+
+        setPortfolioForm({
+          title: '',
+          location: '',
+          image: '',
+          description: '',
+        })
+
+        alert('Portfolio item saved')
+      } catch (err) {
+        console.log(err)
+        alert('Failed to add portfolio')
+      }
+    }
 
     // =========================================
 // CLOUDINARY IMAGE UPLOAD
@@ -99,78 +130,45 @@ const uploadImageToCloudinary = async (file) => {
   // =========================================
   const fetchProfile = async () => {
     try {
-      const response = await API.get(
-        '/users/me'
-      )
+      const response = await API.get('/users/me')
+      const user =
+        response?.data?.data ||
+        response?.data?.user ||
+        response?.data
 
-      const user = response.data.user
+      if (!user) return
 
-      setFormData({
-  fullName: user?.fullName || '',
-  email: user?.email || '',
-  phone: user?.phone || '',
-  hourlyRate: user?.hourlyRate || '',
-  profilePhoto:
-    user?.profilePhoto || '/images/cleaner.jpeg',
-  skill: user?.skill || '',
+      setFormData((prev) => ({
+        ...prev,
 
-  location: {
-    state: user?.location?.state || '',
-    city: user?.location?.city || '',
-    localGovernment:
-      user?.location?.localGovernment || '',
-    address: user?.location?.address || '',
-  },
+        fullName: user.fullName ?? '',
+        email: user.email ?? '',
+        phone: user.phone ?? '',
+        skill: user.skill ?? '',
+        hourlyRate: user.hourlyRate ?? '',
+        profilePhoto:
+          user.profilePhoto ?? '/images/cleaner.jpeg',
 
-  bio: user?.about || '',
+        bio: user.about ?? '',
+        yearsOfExperience: user.yearsOfExperience ?? '',
+        specialization: user.specialization ?? '',
+        nin: user?.verification?.nin ?? '',
+        availability: user.availability ?? 'available',
 
-  yearsOfExperience:
-    user?.yearsOfExperience || '',
+        location: {
+          ...prev.location,
+          state: user?.location?.state ?? '',
+          city: user?.location?.city ?? '',
+          localGovernment:
+            user?.location?.localGovernment ?? '',
+          address: user?.location?.address ?? '',
+        },
+      }))
 
-  specialization:
-    user?.specialization || '',
-
-  nin:
-    user?.verification?.nin || '',
-
-  availability:
-    user?.availability || 'available',
-})
-
-      setSkills(user?.skills || [])
+      setSkills(user?.skills ?? [])
     } catch (error) {
       console.log(error)
       setError('Failed to load profile')
-    }
-  }
-
-  const isValidNIN = (nin) => {
-  return /^\d{11}$/.test(nin)
-}
-
-  // =========================================
-  // FETCH PORTFOLIO
-  // =========================================
-  const fetchPortfolio = async () => {
-    try {
-      const response = await API.get(
-        '/portfolio/me'
-      )
-
-      const portfolioData =
-        response?.data?.data ||
-        response?.data?.portfolio ||
-        response?.data ||
-        []
-
-      setPortfolio(
-        Array.isArray(portfolioData)
-          ? portfolioData
-          : []
-      )
-    } catch (error) {
-      console.log(error)
-      setPortfolio([])
     }
   }
 
@@ -181,11 +179,7 @@ const uploadImageToCloudinary = async (file) => {
     const loadPage = async () => {
       try {
         setLoading(true)
-
-        await Promise.all([
-          fetchProfile(),
-          fetchPortfolio(),
-        ])
+        await fetchProfile()
       } catch (error) {
         console.log(error)
       } finally {
@@ -802,48 +796,65 @@ onChange={async (e) => {
 
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* PORTFOLIO INPUT FORM */}
+        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 mb-6">
+          <h3 className="text-xl font-bold mb-4">Add Portfolio Item</h3>
 
-          {portfolio.length ===
-          0 ? (
-            <div className="bg-gray-800 border border-gray-700 rounded-3xl p-6">
-              <p className="text-gray-400">
-                No portfolio uploaded
-              </p>
-            </div>
-          ) : (
-            portfolio.map((item) => (
-              <div
-                key={item._id}
-                className="bg-gray-800 border border-gray-700 rounded-3xl overflow-hidden"
+          <div className="grid gap-4">
+            <input
+              placeholder="Project Title"
+              value={portfolioForm.title}
+              onChange={(e) =>
+                setPortfolioForm({ ...portfolioForm, title: e.target.value })
+              }
+              className="w-full bg-gray-800 border border-gray-700 focus:border-orange-500 p-4 rounded-2xl outline-none"
+            />
+
+            <input
+              placeholder="Location"
+              value={portfolioForm.location}
+              onChange={(e) =>
+                setPortfolioForm({ ...portfolioForm, location: e.target.value })
+              }
+              className="w-full bg-gray-800 border border-gray-700 focus:border-orange-500 p-4 rounded-2xl outline-none"
+            />
+
+            <textarea
+              placeholder="Description"
+              value={portfolioForm.description}
+              onChange={(e) =>
+                setPortfolioForm({ ...portfolioForm, description: e.target.value })
+              }
+              className="w-full bg-gray-800 border border-gray-700 focus:border-orange-500 p-4 rounded-2xl outline-none resize-none"
+              rows={4}
+            />
+
+            <div className="flex items-center gap-3">
+              <input
+                type="file"
+                onChange={async (e) => {
+                  const file = e.target.files[0]
+                  if (!file) return
+
+                  const url = await uploadImageToCloudinary(file)
+
+                  setPortfolioForm((prev) => ({
+                    ...prev,
+                    image: url,
+                  }))
+                }}
+                className="w-full bg-gray-800 border border-gray-700 p-3 rounded-2xl"
+              />
+
+              <button
+                onClick={addPortfolioItem}
+                className="bg-orange-500 hover:bg-orange-600 px-6 py-4 rounded-2xl font-medium"
               >
-
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-56 object-cover"
-                />
-
-                <div className="p-5">
-
-                  <h3 className="font-bold text-lg mb-2">
-                    {item.title}
-                  </h3>
-
-                  <p className="text-gray-400 text-sm">
-                    {
-                      item.location
-                    }
-                  </p>
-
-                </div>
-
-              </div>
-            ))
-          )}
-
+                Add
+              </button>
+            </div>
+          </div>
         </div>
-
       </div>
 
       {/* =========================================
@@ -859,10 +870,10 @@ onChange={async (e) => {
 
           <button
             onClick={() =>
-             setFormData({
-  ...formData,
-  availability: 'available'
-})
+              setFormData({
+                ...formData,
+                availability: 'available',
+              })
             }
             className={`py-4 rounded-2xl font-medium transition ${
               formData.availability === 'available'
@@ -890,8 +901,8 @@ onChange={async (e) => {
           </button>
 
           <button className="bg-gray-800 border border-gray-700 py-4 rounded-2xl font-medium">
-  Offline
-</button>
+            Offline
+          </button>
 
         </div>
 

@@ -28,6 +28,13 @@ const WorkerDashboard = () => {
   const [loading, setLoading] = useState(false)
   const [availabilityLoading, setAvailabilityLoading] = useState(false)
   const [error, setError] = useState('')
+  const [reviewModal, setReviewModal] = useState(false)
+const [selectedJob, setSelectedJob] = useState(null)
+
+const [review, setReview] = useState({
+  rating: 5,
+  comment: '',
+})
 
   // =====================================
   // WORKER PROFILE
@@ -247,6 +254,39 @@ const WorkerDashboard = () => {
 
     loadDashboard()
   }, [])
+
+  const openReviewModal = (job) => {
+  setSelectedJob(job)
+
+  setReview({
+    rating: 5,
+    comment: '',
+  })
+
+  setReviewModal(true)
+}
+
+const submitCustomerReview = async () => {
+  try {
+    await API.post('/reviews/customer-review', {
+      jobId: selectedJob._id,
+      rating: review.rating,
+      comment: review.comment,
+    })
+
+    setReviewModal(false)
+    setSelectedJob(null)
+
+    fetchCompletedJobs()
+
+    alert('Customer review submitted')
+  } catch (err) {
+    alert(
+      err?.response?.data?.message ||
+      'Failed to submit review'
+    )
+  }
+}
 
   // =====================================
   // STATUS STYLE
@@ -625,6 +665,14 @@ const WorkerDashboard = () => {
                     {job?.rating || 5}
                   </span>
                 </div>
+                {!job.customerReview && (
+  <button
+    onClick={() => openReviewModal(job)}
+    className="mt-4 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 rounded-xl"
+  >
+    ⭐ Review Customer
+  </button>
+)}
               </div>
             ))
           )}
@@ -675,6 +723,78 @@ const WorkerDashboard = () => {
           )}
         </div>
       )}
+      {reviewModal && (
+  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 w-full max-w-md">
+
+      <h2 className="text-xl font-bold mb-2">
+        Review Customer
+      </h2>
+
+      <p className="text-gray-400 mb-5">
+        {selectedJob?.customer?.fullName}
+      </p>
+
+      <div className="mb-4">
+        <label className="block mb-2 text-sm">
+          Rating
+        </label>
+
+        <select
+          value={review.rating}
+          onChange={(e) =>
+            setReview({
+              ...review,
+              rating: Number(e.target.value),
+            })
+          }
+          className="w-full bg-gray-800 rounded-xl p-3"
+        >
+          <option value={5}>★★★★★ (5)</option>
+          <option value={4}>★★★★☆ (4)</option>
+          <option value={3}>★★★☆☆ (3)</option>
+          <option value={2}>★★☆☆☆ (2)</option>
+          <option value={1}>★☆☆☆☆ (1)</option>
+        </select>
+      </div>
+
+      <div className="mb-5">
+        <label className="block mb-2 text-sm">
+          Comment
+        </label>
+
+        <textarea
+          value={review.comment}
+          onChange={(e) =>
+            setReview({
+              ...review,
+              comment: e.target.value,
+            })
+          }
+          placeholder="Describe your experience with this customer..."
+          className="w-full bg-gray-800 rounded-xl p-3 h-32 resize-none"
+        />
+      </div>
+
+      <div className="flex gap-3">
+        <button
+          onClick={() => setReviewModal(false)}
+          className="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-xl"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={submitCustomerReview}
+          className="flex-1 bg-orange-500 hover:bg-orange-600 py-3 rounded-xl"
+        >
+          Submit Review
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
     </div>
   )
 }

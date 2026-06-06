@@ -12,9 +12,6 @@ import {
 import API from '../axios'
 
 const CustomerDashboard = () => {
-  // =========================
-  // STATES
-  // =========================
   const [activeTab, setActiveTab] = useState('jobs')
   const [loading, setLoading] = useState(false)
   const [searchingWorkers, setSearchingWorkers] = useState(false)
@@ -37,38 +34,23 @@ const CustomerDashboard = () => {
     message: '',
   })
 
-  // =========================
-  // REVIEW STATE
-  // =========================
   const [reviewModal, setReviewModal] = useState(false)
   const [selectedJob, setSelectedJob] = useState(null)
   const [review, setReview] = useState({ rating: 0, comment: '' })
 
-  // =========================
-  // SAFE GET
-  // =========================
-  const safeGet = async (url, setter, fallback = []) => {
+  // ========================= SAFE GET =========================
+  const safeGet = async (url, setter, key = 'data') => {
     try {
       const res = await API.get(url)
-
-      const data =
-        res?.data?.data ||
-        res?.data?.jobs ||
-        res?.data?.workers ||
-        res?.data?.complaints ||
-        res?.data ||
-        fallback
-
-      setter(Array.isArray(data) ? data : fallback)
+      const data = res?.data?.[key]
+      setter(Array.isArray(data) ? data : [])
     } catch (err) {
       console.log(err)
-      setter(fallback)
+      setter([])
     }
   }
 
-  // =========================
-  // FETCH
-  // =========================
+  // ========================= FETCH =========================
   const fetchProfile = async () => {
     try {
       const res = await API.get('/users/me')
@@ -78,12 +60,43 @@ const CustomerDashboard = () => {
     }
   }
 
-  const fetchJobs = () => safeGet('/jobs/me', setJobs, [])
-  const fetchMyComplaints = () => safeGet('/complaints/my', setMyComplaints, [])
+  const fetchJobs = async () => {
+    try {
+      const res = await API.get('/jobs/me')
+      const data = res?.data?.data || []
+      setJobs(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.log(err)
+      setJobs([])
+    }
+  }
 
-  // =========================
-  // SEARCH WORKERS
-  // =========================
+  const fetchMyComplaints = () =>
+    safeGet('/complaints/my', setMyComplaints)
+
+  // ========================= ACTIONS =========================
+  const assignWorker = async (jobId, workerId) => {
+    try {
+      setLoading(true)
+      await API.patch(`/jobs/${jobId}/assign`, { workerId })
+      await fetchJobs()
+      alert('Worker assigned successfully')
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Failed to assign worker')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateJobStatus = async (jobId, status) => {
+    try {
+      await API.patch(`/jobs/${jobId}/status`, { status })
+      await fetchJobs()
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Failed to update status')
+    }
+  }
+
   const searchWorkers = async () => {
     try {
       setSearchingWorkers(true)
@@ -92,157 +105,129 @@ const CustomerDashboard = () => {
         params: searchFilters,
       })
 
-      const data =
-        res?.data?.data ||
-        res?.data?.workers ||
-        res?.data ||
-        []
-
+      const data = res?.data?.data || []
       setWorkers(Array.isArray(data) ? data : [])
-    } catch (err) {
-      console.log(err)
+    } catch {
       setWorkers([])
     } finally {
       setSearchingWorkers(false)
     }
   }
 
-  // =========================
-  // COMPLAINT
-  // =========================
   const submitComplaint = async () => {
     try {
       if (!complaint.category || !complaint.message) {
-        alert('Please fill all fields')
-        return
+        return alert('Fill all fields')
       }
 
       await API.post('/complaints', complaint)
-      alert('Complaint submitted successfully')
-
       setComplaint({ category: '', message: '' })
       fetchMyComplaints()
-    } catch (err) {
-      console.log(err)
+    } catch {
       alert('Failed to submit complaint')
     }
   }
 
-  // =========================
-  // REVIEW LOGIC
-  // =========================
-  const openReview = (job) => {
-    setSelectedJob(job)
-    setReview({ rating: 0, comment: '' })
-    setReviewModal(true)
-  }
-
-  const submitReview = async () => {
-    try {
-      if (!selectedJob) return
-
-      if (!review.rating || !review.comment) {
-        alert('Please add rating and comment')
-        return
-      }
-
-      await API.post('/reviews', {
-        jobId: selectedJob._id,
-        workerId: selectedJob.worker,
-        rating: review.rating,
-        comment: review.comment,
-      })
-
-      alert('Review submitted successfully')
-
-      setReviewModal(false)
-      setSelectedJob(null)
-      setReview({ rating: 0, comment: '' })
-    } catch (err) {
-      console.log(err)
-      alert('Failed to submit review')
-    }
-  }
-
-  // =========================
-  // LOAD DASHBOARD
-  // =========================
+  // ========================= LOAD =========================
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      setError('')
-
       await Promise.all([
         fetchProfile(),
         fetchJobs(),
         fetchMyComplaints(),
       ])
-
       setLoading(false)
     }
 
     load()
   }, [])
 
-  // =========================
-  // STATUS STYLE
-  // =========================
-  const renderStatus = (job) => {
+  // ========================= STATUS STYLE =========================
+  const statusStyle = (status) => {
     const map = {
       completed: 'bg-green-600/20 text-green-400',
       'in-progress': 'bg-blue-600/20 text-blue-400',
       assigned: 'bg-purple-600/20 text-purple-400',
+      open: 'bg-yellow-600/20 text-yellow-400',
     }
-
-    return map[job.status] || 'bg-yellow-600/20 text-yellow-400'
+    return map[status] || map.open
   }
 
-  const renderComplaintStatus = (status) => {
-    const map = {
-      resolved: 'bg-green-600/20 text-green-400',
-      rejected: 'bg-red-600/20 text-red-400',
-    }
+  // ========================= REVIEWS =========================
 
-    return map[status] || 'bg-yellow-600/20 text-yellow-400'
+const openReviewModal = (job) => {
+  setSelectedJob(job)
+  setReview({
+    rating: 5,
+    comment: '',
+  })
+  setReviewModal(true)
+}
+
+const submitReview = async () => {
+  try {
+    await API.post('/reviews', {
+      jobId: selectedJob._id,
+      rating: Number(review.rating),
+      comment: review.comment,
+    })
+
+    setReviewModal(false)
+    setSelectedJob(null)
+
+    fetchJobs()
+
+    alert('Review submitted successfully')
+  } catch (err) {
+    console.log(err.response?.data)
+
+    alert(
+      err?.response?.data?.message ||
+      'Failed to submit review'
+    )
   }
+}
 
-  // =========================
-  // UI
-  // =========================
+  // ========================= UI =========================
   return (
     <div className="min-h-screen bg-gray-950 text-white p-5 md:p-10">
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between gap-4 mb-8">
+      <div className="flex justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Customer Dashboard</h1>
           <p className="text-gray-400">
             Welcome {profile?.fullName || 'Customer'}
           </p>
+          {profile?.stats?.trustScore !== undefined && (
+  <div className="mt-2 flex items-center gap-2">
+    <FaStar className="text-yellow-400" />
+    <p className="text-sm text-gray-300">
+      Trust Score:{" "}
+      <span className="text-orange-400 font-bold">
+        {profile.stats.trustScore}
+      </span>
+    </p>
+  </div>
+)}
         </div>
 
-       <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-  
-  <Link
-    href="/customer-edit"
-    className="group flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 px-5 py-3 rounded-2xl transition-all duration-200 text-sm font-medium text-gray-200"
-  >
-    <span className="w-2 h-2 rounded-full bg-gray-500 group-hover:bg-gray-300 transition"></span>
-    Edit Profile
-  </Link>
+        <div className="flex gap-3">
+          <Link
+            href="/customer-edit"
+            className="bg-gray-900 px-4 py-2 rounded-xl"
+          >
+            Edit Profile
+          </Link>
 
-  <Link
-    href="/post-job"
-    className="relative overflow-hidden flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 px-6 py-3 rounded-2xl font-semibold transition-all duration-200 text-sm text-white shadow-lg shadow-orange-500/20"
-  >
-    <span className="w-2 h-2 rounded-full bg-white/70"></span>
-    Post Job
-
-    {/* subtle glow effect */}
-    <span className="absolute inset-0 opacity-0 hover:opacity-100 transition bg-white/10"></span>
-  </Link>
-
-</div>
+          <Link
+            href="/post-job"
+            className="bg-orange-500 px-4 py-2 rounded-xl"
+          >
+            Post Job
+          </Link>
+        </div>
       </div>
 
       {/* TABS */}
@@ -255,143 +240,255 @@ const CustomerDashboard = () => {
               activeTab === tab ? 'bg-orange-500' : 'bg-gray-800'
             }`}
           >
-            {tab.replace('-', ' ')}
+            {tab}
           </button>
         ))}
       </div>
 
-      {loading && <p className="text-gray-400">Loading...</p>}
-      {error && <p className="text-red-400">{error}</p>}
-
-      {/* ========================= JOBS ========================= */}
+      {/* ================= JOBS ================= */}
       {activeTab === 'jobs' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
+
           {jobs.length === 0 ? (
-            <div className="bg-gray-900 p-6 rounded-3xl">
-              <p className="text-gray-400">No jobs found yet.</p>
-            </div>
+            <p className="text-gray-400">No jobs found</p>
           ) : (
             jobs.map(job => (
-              <div key={job._id} className="bg-gray-900 p-6 rounded-3xl border border-gray-800">
+              <div
+                key={job._id}
+                className="bg-gray-900 p-6 rounded-3xl border border-gray-800"
+              >
 
+                {/* JOB INFO */}
                 <div className="flex justify-between">
                   <div>
                     <h2 className="font-bold text-lg">{job.title}</h2>
-                    <p className="text-gray-400 flex items-center gap-2">
-                      <FaMapMarkerAlt /> {job.location}
+
+                    <p className="text-gray-400 text-sm mt-1">
+                      {job.description}
                     </p>
+
+                    <p className="text-gray-400 mt-2 flex items-center gap-2">
+                      <FaMapMarkerAlt />
+                      {job.location?.city}, {job.location?.state}
+                    </p>
+
+                    {job.assignedWorker && (
+                      <p className="text-green-400 text-sm mt-2">
+                        Assigned: {job.assignedWorker.fullName}
+                      </p>
+                    )}
                   </div>
 
-                  <span className={`px-3 py-1 rounded-full ${renderStatus(job)}`}>
-                    {job.status}
-                  </span>
+                  <div className="flex flex-col gap-2">
+                    <span className={`px-3 py-1 rounded-xl ${statusStyle(job.status)}`}>
+                      {job.status}
+                    </span>
+
+                    <select
+                      value={job.status}
+                      onChange={(e) =>
+                        updateJobStatus(job._id, e.target.value)
+                      }
+                      className="bg-gray-800 p-2 rounded-lg"
+                    >
+                      <option value="open">Open</option>
+                      <option value="assigned">Assigned</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
                 </div>
 
-                {job.status === 'completed' && job.worker && (
-                  <button
-                    onClick={() => openReview(job)}
-                    className="mt-3 bg-orange-500 px-4 py-2 rounded-xl"
-                  >
-                    Leave Review
-                  </button>
-                )}
+                {/* APPLICANTS */}
+                <div className="mt-6">
+                  <h3 className="text-gray-400 mb-3">
+                    Applicants ({job.applicants?.length || 0})
+                  </h3>
+
+                  {job.applicants?.length === 0 ? (
+                    <p className="text-gray-500">No applicants</p>
+                  ) : (
+                    job.applicants.map(app => {
+                      const w = app.worker
+
+                      return (
+                        <div
+                          key={app._id}
+                          className="bg-gray-800 p-4 rounded-xl flex justify-between items-center mb-3"
+                        >
+                          <div>
+                            <p className="font-semibold flex items-center gap-2">
+                              {w.fullName}
+                              {w.verification?.isVerified && (
+                                <FaCheckCircle className="text-green-500" />
+                              )}
+                            </p>
+
+                            <p className="text-sm text-gray-400">
+                              {w.skill}
+                            </p>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Link
+                              href={`/workers/${w._id}`}
+                              className="bg-gray-700 px-3 py-1 rounded-lg"
+                            >
+                              View
+                            </Link>
+
+                            <button
+                              disabled={!!job.assignedWorker}
+                              onClick={() =>
+                                assignWorker(job._id, w._id)
+                              }
+                              className="bg-orange-500 px-3 py-1 rounded-lg disabled:opacity-50"
+                            >
+                              {job.assignedWorker
+                                ? 'Assigned'
+                                : 'Assign'}
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+                          {/* REVIEW WORKER */}
+{job.status === 'completed' &&
+  job.assignedWorker &&
+  !job.review && (
+    <div className="mt-5 pt-5 border-t border-gray-800">
+      <button
+        onClick={() => openReviewModal(job)}
+        className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-4 py-2 rounded-xl"
+      >
+        ⭐ Give Review
+      </button>
+    </div>
+)}
               </div>
             ))
           )}
+
+
         </div>
       )}
 
-      {/* ========================= FIND WORKERS (RESTORED) ========================= */}
+      {/* FIND WORKERS  */}
       {activeTab === 'find-workers' && (
         <div>
+          <div className="bg-gray-900 p-6 rounded-xl mb-4">
+            <h2 className="font-bold mb-3">Search Workers</h2>
 
-          <div className="bg-gray-900 p-6 rounded-3xl mb-6">
-            <h2 className="text-xl font-bold mb-4">Search Workers</h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-           {Object.keys(searchFilters).map((key) => (
-  <input
-    key={key}
-    placeholder={key}
-    value={searchFilters[key]}
-    onChange={(e) =>
-      setSearchFilters({
-        ...searchFilters,
-        [key]: e.target.value,
-      })
-    }
-    className="w-full bg-gray-800 border border-gray-700 px-3 py-4 rounded-xl text-sm outline-none focus:border-orange-500"
-  />
-))}
+            <div className="grid grid-cols-2 gap-3">
+              {Object.keys(searchFilters).map(key => (
+                <input
+                  key={key}
+                  placeholder={key}
+                  value={searchFilters[key]}
+                  onChange={e =>
+                    setSearchFilters({
+                      ...searchFilters,
+                      [key]: e.target.value,
+                    })
+                  }
+                  className="bg-gray-800 p-2 rounded-lg"
+                />
+              ))}
             </div>
 
             <button
               onClick={searchWorkers}
-              className="mt-4 bg-orange-500 px-4 py-2 rounded-xl"
+              className="mt-3 bg-orange-500 px-4 py-2 rounded-lg"
             >
               {searchingWorkers ? 'Searching...' : 'Search'}
             </button>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-            {workers.map(worker => (
-              <div key={worker._id} className="bg-gray-900 p-5 rounded-3xl">
-                <h3 className="font-bold flex items-center gap-2">
-                  {worker.fullName}
-                  {worker?.verification?.isVerified && (
-                    <FaCheckCircle className="text-green-500" />
-                  )}
-                </h3>
-
-                <p className="text-orange-400">{worker.skill}</p>
-                <p className="text-gray-400">{worker.location}</p>
+            {workers.map(w => (
+              <div key={w._id} className="bg-gray-900 p-4 rounded-xl">
+                <p className="font-bold">{w.fullName}</p>
+                <p className="text-orange-400">{w.skill}</p>
               </div>
             ))}
           </div>
         </div>
       )}
+{/* REVIEW MODAL */}
+{reviewModal && (
+  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 w-full max-w-md">
 
-      {/* ========================= REVIEW MODAL ========================= */}
-      {reviewModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md">
+      <h2 className="text-xl font-bold mb-2">
+        Review Worker
+      </h2>
 
-            <h2 className="text-xl font-bold mb-4">Leave Review</h2>
+      <p className="text-gray-400 mb-5">
+        {selectedJob?.assignedWorker?.fullName}
+      </p>
 
-            <div className="flex gap-2 mb-4">
-              {[1,2,3,4,5].map(star => (
-                <FaStar
-                  key={star}
-                  onClick={() => setReview({ ...review, rating: star })}
-                  className={`cursor-pointer ${
-                    review.rating >= star ? 'text-yellow-400' : 'text-gray-600'
-                  }`}
-                />
-              ))}
-            </div>
+      <div className="mb-4">
+        <label className="block mb-2 text-sm">
+          Rating
+        </label>
 
-            <textarea
-              value={review.comment}
-              onChange={(e) =>
-                setReview({ ...review, comment: e.target.value })
-              }
-              className="w-full p-3 bg-gray-800 rounded-xl"
-              rows={4}
-            />
+        <select
+          value={review.rating}
+          onChange={(e) =>
+            setReview({
+              ...review,
+              rating: Number(e.target.value),
+            })
+          }
+          className="w-full bg-gray-800 rounded-xl p-3"
+        >
+          <option value={5}>★★★★★ (5)</option>
+          <option value={4}>★★★★☆ (4)</option>
+          <option value={3}>★★★☆☆ (3)</option>
+          <option value={2}>★★☆☆☆ (2)</option>
+          <option value={1}>★☆☆☆☆ (1)</option>
+        </select>
+      </div>
 
-            <div className="flex gap-3 mt-4">
-              <button onClick={submitReview} className="bg-orange-500 flex-1 py-2 rounded-xl">
-                Submit
-              </button>
+      <div className="mb-5">
+        <label className="block mb-2 text-sm">
+          Comment
+        </label>
 
-              <button onClick={() => setReviewModal(false)} className="bg-gray-700 flex-1 py-2 rounded-xl">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        <textarea
+          value={review.comment}
+          onChange={(e) =>
+            setReview({
+              ...review,
+              comment: e.target.value,
+            })
+          }
+          placeholder="Tell others about your experience..."
+          className="w-full bg-gray-800 rounded-xl p-3 h-32 resize-none"
+        />
+      </div>
 
+      <div className="flex gap-3">
+        <button
+          onClick={() => setReviewModal(false)}
+          className="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-xl"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={submitReview}
+          className="flex-1 bg-orange-500 hover:bg-orange-600 py-3 rounded-xl"
+        >
+          Submit Review
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   )
 }
