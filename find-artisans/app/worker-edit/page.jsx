@@ -14,6 +14,8 @@ import {
 import API from '../axios'
 import { State, City } from 'country-state-city'
 import { lgas } from 'nigerian-states-and-lgas'
+import { useDispatch } from 'react-redux'
+import { setUser } from '@/redux/slices/authSlice'
 
 const WorkerProfileEditPage = () => {
   // =========================================
@@ -68,7 +70,7 @@ const WorkerProfileEditPage = () => {
         alert('Failed to add portfolio')
       }
     }
-
+const dispatch = useDispatch()
     // =========================================
 // CLOUDINARY IMAGE UPLOAD
 // =========================================
@@ -264,11 +266,10 @@ const uploadImageToCloudinary = async (file) => {
   availability: formData.availability,
   location: formData.location,
 }
-console.log('SAVING:', formData.profilePhoto)
-      await API.patch(
-        '/users/me',
-        payload
-      )
+      const res = await API.patch('/users/me', payload)
+
+dispatch(setUser(res.data.user))
+      dispatch(setUser(res.data.user))
       alert(
         'Profile updated successfully'
       )
@@ -900,9 +901,21 @@ onChange={async (e) => {
             Busy
           </button>
 
-          <button className="bg-gray-800 border border-gray-700 py-4 rounded-2xl font-medium">
-            Offline
-          </button>
+          <button
+  onClick={() =>
+    setFormData({
+      ...formData,
+      availability: 'offline',
+    })
+  }
+  className={`py-4 rounded-2xl font-medium transition ${
+    formData.availability === 'offline'
+      ? 'bg-gray-600 text-white'
+      : 'bg-gray-800 border border-gray-700'
+  }`}
+>
+  Offline
+</button>
 
         </div>
 

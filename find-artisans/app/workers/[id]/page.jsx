@@ -49,10 +49,10 @@ const WorkerProfilePage = () => {
       setReviews(reviewRes?.data?.reviews || [])
       setRatingStats(reviewRes?.data?.stats || null)
 
-      // Fetch jobs for this worker (server may provide worker-specific endpoint)
+      // Fetch jobs for this worker 
       try {
-        const res = await API.get(`/jobs/worker/${id}`)
-        const jobsData = res?.data?.data || res?.data || []
+        const res = await API.get(`/jobs/worker/public/${id}`)
+        const jobsData = res?.data?.data?.jobs || res?.data || []
         setJobs(Array.isArray(jobsData) ? jobsData : [])
       } catch (jobErr) {
         console.error('Failed to fetch worker jobs:', jobErr)
@@ -112,7 +112,7 @@ const WorkerProfilePage = () => {
           <div className="absolute -top-16 left-6 md:left-8">
             <div className="w-32 h-32 rounded-3xl bg-gray-900 p-2 border border-gray-700">
               <img
-                src={worker.profilePhoto || worker.profile?.profilePhoto || '/images/cleaner.jpeg'}
+                src={worker.profilePhoto || worker.user?.profilePhoto || '/images/cleaner.jpeg'}
                 alt={worker.fullName}
                 className="w-full h-full object-cover rounded-2xl"
               />
@@ -285,10 +285,7 @@ const WorkerProfilePage = () => {
 
           {/* Only show completed jobs for this worker */}
           {(() => {
-            const completedJobs = jobs.filter(j => {
-              const assignedId = j.assignedWorker?._id || j.assignedWorker?.id
-              return String(assignedId) === String(id) && j.status === 'completed'
-            })
+            const completedJobs = jobs
 
             if (completedJobs.length === 0) {
               return (

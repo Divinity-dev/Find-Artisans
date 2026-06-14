@@ -34,9 +34,10 @@ const CustomerProfilePage = () => {
 
       // Handle multiple possible response structures
       const userData = data.user || data.data || data
-      setCustomer(userData)
-      setStats(userData.stats || data.stats || {})
-      setJobs(userData.jobs || data.jobs || [])
+      console.log('CUSTOMER DATA:', userData)
+      setCustomer(userData.user)
+setStats(userData.stats || {})
+setJobs(userData.jobs || [])
     } catch (err) {
       setError(
         err.response?.data?.message || 'Failed to load profile'
@@ -64,6 +65,19 @@ const CustomerProfilePage = () => {
 
   if (!customer) return null
 
+  const memberSince = customer.createdAt
+    ? new Date(customer.createdAt)
+    : null
+
+  const memberSinceLabel = memberSince?.getTime()
+    ? memberSince.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      })
+    : 'Unknown'
+
+    
+
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
 
@@ -80,7 +94,7 @@ const CustomerProfilePage = () => {
         </p>
 
         <p className="text-gray-500 mt-2">
-          Member since {new Date(customer.createdAt).getFullYear()}
+          Member since {memberSinceLabel}
         </p>
 
         {customer.verification?.isVerified && (

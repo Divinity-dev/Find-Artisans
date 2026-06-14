@@ -24,9 +24,8 @@ const WorkerDashboard = () => {
   // =====================================
   // STATES
   // =====================================
-  const [activeTab, setActiveTab] = useState('available')
+  const [activeTab, setActiveTab] = useState('active')
   const [loading, setLoading] = useState(false)
-  const [availabilityLoading, setAvailabilityLoading] = useState(false)
   const [error, setError] = useState('')
   const [reviewModal, setReviewModal] = useState(false)
 const [selectedJob, setSelectedJob] = useState(null)
@@ -40,12 +39,11 @@ const [review, setReview] = useState({
   // WORKER PROFILE
   // =====================================
   const [worker, setWorker] = useState(null)
-  const [isAvailable, setIsAvailable] = useState(false)
+
 
   // =====================================
   // JOBS
   // =====================================
-  const [availableJobs, setAvailableJobs] = useState([])
   const [activeJobs, setActiveJobs] = useState([])
   const [completedJobs, setCompletedJobs] = useState([])
 
@@ -53,15 +51,6 @@ const [review, setReview] = useState({
   // PORTFOLIO
   // =====================================
   const [portfolio, setPortfolio] = useState([])
-
-  // =====================================
-  // EARNINGS
-  // =====================================
-  const [earnings, setEarnings] = useState({
-    today: 0,
-    week: 0,
-    month: 0,
-  })
 
   // =====================================
   // SAFE RESPONSE HELPER
@@ -95,21 +84,8 @@ const [review, setReview] = useState({
     }
   }
 
-  // =====================================
-  // FETCH AVAILABLE JOBS
-  // =====================================
-  const fetchAvailableJobs = async () => {
-    try {
-      const response = await API.get('/jobs/available')
+  
 
-      const jobsData = extractData(response, [])
-
-      setAvailableJobs(Array.isArray(jobsData) ? jobsData : [])
-    } catch (error) {
-      console.log(error)
-      setAvailableJobs([])
-    }
-  }
 
   // =====================================
   // FETCH ACTIVE JOBS
@@ -159,43 +135,8 @@ const [review, setReview] = useState({
     }
   }
 
-  // =====================================
-  // FETCH EARNINGS
-  // =====================================
-  const fetchEarnings = async () => {
-    try {
-      const response = await API.get('/payments/worker/me')
 
-      const earningsData = extractData(response, {})
-
-      setEarnings({
-        today: earningsData?.today || 0,
-        week: earningsData?.week || 0,
-        month: earningsData?.month || 0,
-      })
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
-  // =====================================
-  // TOGGLE AVAILABILITY
-  // =====================================
-  const toggleAvailability = async () => {
-    try {
-      setAvailabilityLoading(true)
-
-      const response = await API.patch('/users/worker/availability')
-
-      const updatedUser = extractData(response, {})
-
-      setIsAvailable(updatedUser?.isAvailable)
-    } catch (error) {
-      console.log(error)
-    } finally {
-      setAvailabilityLoading(false)
-    }
-  }
+ 
 
   // =====================================
   // ACCEPT JOB
@@ -203,8 +144,6 @@ const [review, setReview] = useState({
   const acceptJob = async (jobId) => {
     try {
       await API.patch(`/jobs/${jobId}/accept`)
-
-      fetchAvailableJobs()
       fetchActiveJobs()
     } catch (error) {
       console.log(error)
@@ -238,11 +177,9 @@ const [review, setReview] = useState({
 
         await Promise.all([
           fetchProfile(),
-          fetchAvailableJobs(),
           fetchActiveJobs(),
           fetchCompletedJobs(),
           fetchPortfolio(),
-          fetchEarnings(),
         ])
       } catch (error) {
         console.log(error)
@@ -287,6 +224,11 @@ const submitCustomerReview = async () => {
     )
   }
 }
+
+const totalEarnings = completedJobs.reduce(
+  (sum, job) => sum + (job.budget || 0),
+  0
+)
 
   // =====================================
   // STATUS STYLE
@@ -340,32 +282,7 @@ const submitCustomerReview = async () => {
             </div>
           </Link>
 
-          <button
-            onClick={toggleAvailability}
-            disabled={availabilityLoading}
-            className={`flex items-center justify-center gap-3 px-5 py-3 rounded-2xl border transition-all duration-200 min-w-[180px] ${
-              isAvailable
-                ? 'bg-green-600 hover:bg-green-700 border-green-500 text-white'
-                : 'bg-gray-900 hover:bg-gray-800 border-gray-700 text-gray-200'
-            }`}
-          >
-            {availabilityLoading ? (
-              <FaSpinner className="animate-spin text-lg" />
-            ) : isAvailable ? (
-              <FaToggleOn className="text-xl" />
-            ) : (
-              <FaToggleOff className="text-xl" />
-            )}
 
-            <div className="text-left">
-              <p className="text-xs opacity-80">
-                Worker Status
-              </p>
-              <p className="font-semibold">
-                {isAvailable ? 'Available' : 'Offline'}
-              </p>
-            </div>
-          </button>
         </div>
       </div>
 
@@ -404,6 +321,18 @@ const submitCustomerReview = async () => {
             <p className="text-orange-400 font-medium mt-1">
               {worker?.skill || 'Artisan'}
             </p>
+
+            <div
+  className={`inline-flex mt-3 px-3 py-1 rounded-full text-sm font-medium ${
+    worker?.availability === 'available'
+      ? 'bg-green-500/20 text-green-400'
+      : worker?.availability === 'busy'
+      ? 'bg-orange-500/20 text-orange-400'
+      : 'bg-gray-500/20 text-gray-400'
+  }`}
+>
+  {worker?.availability || 'offline'}
+</div>
 
             <p className="text-gray-400 flex items-center gap-2 mt-3 text-sm">
               
@@ -454,50 +383,21 @@ const submitCustomerReview = async () => {
       {/* =====================================
           EARNINGS
       ===================================== */}
-      <div className="grid md:grid-cols-3 gap-5 mb-8">
-        {[
-          {
-            label: 'Today',
-            value: `₦${earnings.today}`,
-            icon: <FaWallet className="text-green-400" />,
-          },
-          {
-            label: 'This Week',
-            value: `₦${earnings.week}`,
-            icon: <FaChartLine className="text-orange-400" />,
-          },
-          {
-            label: 'This Month',
-            value: `₦${earnings.month}`,
-            icon: <FaBriefcase className="text-blue-400" />,
-          },
-        ].map((item, index) => (
-          <div
-            key={index}
-            className="bg-gray-900 border border-gray-800 rounded-3xl p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-gray-400 text-sm">
-                {item.label}
-              </p>
+      <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6">
+  <p className="text-gray-400 text-sm mb-2">
+    Total Earnings
+  </p>
 
-              <div className="text-xl">
-                {item.icon}
-              </div>
-            </div>
-
-            <h2 className="text-3xl font-bold">
-              {item.value}
-            </h2>
-          </div>
-        ))}
-      </div>
+  <h2 className="text-3xl font-bold text-green-400">
+    ₦{totalEarnings.toLocaleString()}
+  </h2>
+</div>
 
       {/* =====================================
           TABS
       ===================================== */}
-      <div className="flex flex-wrap gap-3 mb-8 overflow-x-auto pb-2">
-        {['available', 'active', 'completed', 'portfolio'].map((tab) => (
+      <div className="flex flex-wrap gap-3 mb-8 overflow-x-auto pb-2 mt-4">
+        {[ 'active', 'completed', 'portfolio'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -511,68 +411,6 @@ const submitCustomerReview = async () => {
           </button>
         ))}
       </div>
-
-      {/* =====================================
-          AVAILABLE JOBS
-      ===================================== */}
-      {!loading && activeTab === 'available' && (
-        <div className="grid md:grid-cols-2 gap-6">
-          {availableJobs.length === 0 ? (
-            <div className="bg-gray-900 border border-gray-800 p-6 rounded-3xl">
-              <p className="text-gray-400">
-                No available jobs.
-              </p>
-            </div>
-          ) : (
-            availableJobs.map((job) => (
-              <div
-                key={job._id}
-                className="bg-gray-900 border border-gray-800 rounded-3xl p-6"
-              >
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div>
-                    <h2 className="text-xl font-bold mb-2">
-                      {job.title}
-                    </h2>
-
-                    <div className="space-y-2 text-gray-400 text-sm">
-                      <p className="flex items-center gap-2">
-                        <FaMapMarkerAlt />
-                        {job.location || 'No location'}
-                      </p>
-
-                      <p className="flex items-center gap-2">
-                        <FaClock />
-                        {job.createdAt
-                          ? new Date(job.createdAt).toLocaleString()
-                          : 'Recently'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className={`px-3 py-1 rounded-full text-xs border ${renderStatus(job.status)}`}>
-                    {job.status || 'pending'}
-                  </span>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button className="flex-1 bg-gray-800 hover:bg-gray-700 py-3 rounded-xl transition flex items-center justify-center gap-2">
-                    Details
-                    <FaArrowRight className="text-xs" />
-                  </button>
-
-                  <button
-                    onClick={() => acceptJob(job._id)}
-                    className="flex-1 bg-green-600 hover:bg-green-700 py-3 rounded-xl transition"
-                  >
-                    Accept Job
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
 
       {/* =====================================
           ACTIVE JOBS

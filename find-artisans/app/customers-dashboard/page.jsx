@@ -14,25 +14,16 @@ import API from '../axios'
 const CustomerDashboard = () => {
   const [activeTab, setActiveTab] = useState('jobs')
   const [loading, setLoading] = useState(false)
-  const [searchingWorkers, setSearchingWorkers] = useState(false)
   const [error, setError] = useState('')
 
   const [profile, setProfile] = useState(null)
   const [jobs, setJobs] = useState([])
-  const [workers, setWorkers] = useState([])
   const [myComplaints, setMyComplaints] = useState([])
 
-  const [searchFilters, setSearchFilters] = useState({
-    skill: '',
-    state: '',
-    city: '',
-    lga: '',
-  })
-
   const [complaint, setComplaint] = useState({
-    category: '',
-    message: '',
-  })
+  title: '',
+  description: '',
+})
 
   const [reviewModal, setReviewModal] = useState(false)
   const [selectedJob, setSelectedJob] = useState(null)
@@ -114,34 +105,29 @@ const CustomerDashboard = () => {
     }
   }
 
-  const submitComplaint = async () => {
-    try {
-      if (!complaint.category || !complaint.message) {
-        return alert('Fill all fields')
-      }
-
-      await API.post('/complaints', complaint)
-      setComplaint({ category: '', message: '' })
-      fetchMyComplaints()
-    } catch {
-      alert('Failed to submit complaint')
+ const submitComplaint = async () => {
+  try {
+    if (!complaint.title || !complaint.description) {
+      return alert('Please fill all fields')
     }
+
+    await API.post('/complaints', complaint)
+
+    alert('Complaint submitted successfully')
+
+    setComplaint({
+      title: '',
+      description: '',
+    })
+
+    fetchMyComplaints()
+  } catch (err) {
+    alert(
+      err?.response?.data?.message ||
+      'Failed to submit complaint'
+    )
   }
-
-  // ========================= LOAD =========================
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      await Promise.all([
-        fetchProfile(),
-        fetchJobs(),
-        fetchMyComplaints(),
-      ])
-      setLoading(false)
-    }
-
-    load()
-  }, [])
+}
 
   // ========================= STATUS STYLE =========================
   const statusStyle = (status) => {
@@ -232,7 +218,7 @@ const submitReview = async () => {
 
       {/* TABS */}
       <div className="flex gap-3 mb-8 flex-wrap">
-        {['jobs', 'find-workers', 'create-complaint', 'my-complaints'].map(tab => (
+        {['jobs', 'create-complaint', 'my-complaints'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -376,47 +362,116 @@ const submitReview = async () => {
         </div>
       )}
 
-      {/* FIND WORKERS  */}
-      {activeTab === 'find-workers' && (
-        <div>
-          <div className="bg-gray-900 p-6 rounded-xl mb-4">
-            <h2 className="font-bold mb-3">Search Workers</h2>
+      {/* CREATE COMPLAINT */}
+{activeTab === 'create-complaint' && (
+  <div className="max-w-2xl">
+    <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6">
 
-            <div className="grid grid-cols-2 gap-3">
-              {Object.keys(searchFilters).map(key => (
-                <input
-                  key={key}
-                  placeholder={key}
-                  value={searchFilters[key]}
-                  onChange={e =>
-                    setSearchFilters({
-                      ...searchFilters,
-                      [key]: e.target.value,
-                    })
-                  }
-                  className="bg-gray-800 p-2 rounded-lg"
-                />
-              ))}
+      <div className="flex items-center gap-3 mb-5">
+        <FaClipboardList className="text-orange-500 text-xl" />
+        <h2 className="text-xl font-bold">
+          Submit Complaint
+        </h2>
+      </div>
+
+      <div className="space-y-4">
+
+        <div>
+          <label className="block mb-2 text-sm text-gray-400">
+            Complaint Title
+          </label>
+
+          <input
+            type="text"
+            value={complaint.title}
+            onChange={(e) =>
+              setComplaint({
+                ...complaint,
+                title: e.target.value,
+              })
+            }
+            placeholder="Brief title"
+            className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2 text-sm text-gray-400">
+            Description
+          </label>
+
+          <textarea
+            value={complaint.description}
+            onChange={(e) =>
+              setComplaint({
+                ...complaint,
+                description: e.target.value,
+              })
+            }
+            placeholder="Describe your complaint..."
+            className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 h-40 resize-none"
+          />
+        </div>
+
+        <button
+          onClick={submitComplaint}
+          className="bg-orange-500 hover:bg-orange-600 px-6 py-3 rounded-xl font-semibold"
+        >
+          Submit Complaint
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
+
+{/* MY COMPLAINTS */}
+{activeTab === 'my-complaints' && (
+  <div className="space-y-4">
+
+    {myComplaints.length === 0 ? (
+      <p className="text-gray-400">
+        No complaints submitted yet.
+      </p>
+    ) : (
+      myComplaints.map((item) => (
+        <div
+          key={item._id}
+          className="bg-gray-900 border border-gray-800 rounded-2xl p-5"
+        >
+          <div className="flex justify-between items-start">
+
+            <div>
+              <h3 className="font-bold text-lg">
+                {item.title}
+              </h3>
+
+              <p className="text-gray-400 mt-2">
+                {item.description}
+              </p>
             </div>
 
-            <button
-              onClick={searchWorkers}
-              className="mt-3 bg-orange-500 px-4 py-2 rounded-lg"
+            <span
+              className={`px-3 py-1 rounded-xl text-sm ${
+                item.status === 'resolved'
+                  ? 'bg-green-600/20 text-green-400'
+                  : item.status === 'rejected'
+                  ? 'bg-red-600/20 text-red-400'
+                  : item.status === 'reviewed'
+                  ? 'bg-blue-600/20 text-blue-400'
+                  : 'bg-yellow-600/20 text-yellow-400'
+              }`}
             >
-              {searchingWorkers ? 'Searching...' : 'Search'}
-            </button>
-          </div>
+              {item.status}
+            </span>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            {workers.map(w => (
-              <div key={w._id} className="bg-gray-900 p-4 rounded-xl">
-                <p className="font-bold">{w.fullName}</p>
-                <p className="text-orange-400">{w.skill}</p>
-              </div>
-            ))}
           </div>
         </div>
-      )}
+      ))
+    )}
+
+  </div>
+)}
 {/* REVIEW MODAL */}
 {reviewModal && (
   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
