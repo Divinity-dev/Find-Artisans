@@ -78,12 +78,13 @@ const Footer = () => {
 
             <div className="flex items-center gap-2">
               <Phone size={16} className="text-orange-500" />
-              +234 XXX XXX XXXX
+              +2348069715964
             </div>
 
             <div className="flex items-center gap-2">
               <Mail size={16} className="text-orange-500" />
-              support@findartisans.com
+              {/* support@findartisans.com */}
+              divine_asiriuwa@yahoo.com
             </div>
 
           </div>

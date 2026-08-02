@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,7 +22,7 @@ const Navbar = () => {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  // ✅ REAL AUTH STATE (NOT HARD CODED)
+  // ✅ REAL AUTH STATE
   const { user } = useSelector((state) => state.auth);
 
   
@@ -33,6 +34,7 @@ const Navbar = () => {
     Cookies.remove('token')
     Cookies.remove('role')
     localStorage.removeItem('token');
+    toast.success('Logged out successfully');
     router.push('/');
   };
 

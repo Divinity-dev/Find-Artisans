@@ -16,6 +16,7 @@ import { State, City } from 'country-state-city'
 import NaijaStates from 'naija-state-local-government'
 
 import API from '../axios'
+import { toast } from 'react-toastify'
 
 const CustomerProfileEditPage = () => {
   // =========================================
@@ -284,7 +285,6 @@ const handleprofilePhotoUpload = async (e) => {
     const data = await res.json()
 
     if (!res.ok) {
-  console.log('CLOUDINARY ERROR:', data)
   throw new Error(data?.error?.message || 'Upload failed')
 }
 
@@ -293,7 +293,7 @@ const handleprofilePhotoUpload = async (e) => {
       profilePhoto: data.secure_url,
     }))
 
-    setSuccess('Profile photo uploaded successfully')
+    toast.success('Profile photo uploaded successfully')
   } catch (error) {
     console.log(error)
     setError('Failed to upload profile image')
@@ -329,23 +329,19 @@ const handleIdUpload = async (e) => {
         },
       }
     )
-
-    console.log('UPLOAD RESPONSE:', response.data)
-
+console.log(response.data);
     // =====================================
     // FORCE SAVE EVEN IF BACKEND STRUCTURE
     // IS DIFFERENT
     // =====================================
     const uploadedDocument =
-      response?.data?.document ||
-      response?.data?.data?.document ||
-      response?.data?.url ||
-      response?.data?.data?.url ||
-      response?.data?.file ||
-      response?.data?.data?.file ||
-      response?.data?.secure_url ||
-      response?.data?.data?.secure_url ||
-      file.name // fallback so UI updates immediately
+  response?.data?.imageUrl ||
+  response?.data?.data?.imageUrl ||
+  response?.data?.secure_url ||
+  response?.data?.data?.secure_url ||
+  response?.data?.url ||
+  response?.data?.data?.url ||
+  file.name;
 
     setFormData((prev) => ({
       ...prev,
@@ -357,6 +353,7 @@ const handleIdUpload = async (e) => {
     }))
 
     setSuccess('Government ID uploaded successfully')
+    toast.success('Government ID uploaded successfully')
   } catch (error) {
     console.log(error)
 
@@ -419,9 +416,13 @@ const handleIdUpload = async (e) => {
       setSuccess(
         'Profile updated successfully'
       )
+      toast.success('Profile updated successfully')
     } catch (error) {
       console.log(error)
-
+toast.error(
+  error?.response?.data?.message ||
+    'Failed to update profile'
+)
       setError(
         'Failed to update profile'
       )
@@ -430,9 +431,7 @@ const handleIdUpload = async (e) => {
     }
   }
 
-  // =========================================
-  // SUBMIT VERIFICATION
-  // =========================================
+  
 // =========================================
 // SUBMIT VERIFICATION
 // =========================================
@@ -470,15 +469,12 @@ const submitVerification =
             .governmentId,
       }
 
-      console.log(payload)
 
       const response =
         await API.post(
           '/verification',
           payload
         )
-
-      console.log(response.data)
 
       setFormData((prev) => ({
         ...prev,
@@ -493,10 +489,19 @@ const submitVerification =
       setSuccess(
         'Verification submitted successfully'
       )
+      toast.success('Verification submitted successfully')
     } catch (error) {
       console.log(error)
 
       setError(
+        error?.response?.data?.message ||
+          'Verification submission failed'
+      )
+      toast.error(
+        error?.response?.data?.message ||
+          'Verification submission failed'
+      )
+      toast.error(
         error?.response?.data?.message ||
           'Verification submission failed'
       )

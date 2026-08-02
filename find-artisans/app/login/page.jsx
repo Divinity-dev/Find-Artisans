@@ -24,6 +24,7 @@ import {
 } from 'react-icons/fa';
 
 import API from '../axios';
+import { toast } from 'react-toastify'
 
 const LoginPage = () => {
   const dispatch = useDispatch();
@@ -128,6 +129,10 @@ Cookies.set('role', data.user.role, {
             err.response?.data?.message ||
               'Login failed'
           )
+        );
+        toast.error(
+          err.response?.data?.message ||
+            'Login failed'
         );
       }
     },

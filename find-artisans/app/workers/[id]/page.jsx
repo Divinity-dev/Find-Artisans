@@ -1,6 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import API from '../../axios'
+
 import {
   FaMapMarkerAlt,
   FaStar,
@@ -8,233 +11,207 @@ import {
   FaBriefcase,
   FaComments,
   FaPhone,
-  FaCamera,
-  FaClock,
-  FaUserShield,
-  FaTools,
 } from 'react-icons/fa'
 
 const WorkerProfilePage = () => {
+  const { id } = useParams()
+  const router = useRouter()
+
+  const [worker, setWorker] = useState(null)
+  const [reviews, setReviews] = useState([])
+  const [portfolio, setPortfolio] = useState([])
+  const [ratingStats, setRatingStats] = useState(null)
+  const [jobs, setJobs] = useState([])
+  const [selectedJobStatus, setSelectedJobStatus] = useState('all')
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('about')
 
-  const worker = {
-    name: 'John Electric',
-    skill: 'Professional Electrician',
-    location: 'Lekki, Lagos',
-    rating: 4.8,
-    totalReviews: 126,
-    completedJobs: 42,
-    responseTime: '5 mins',
-    responseRate: '98%',
-    experience: '7 Years',
-    verified: true,
-    available: true,
-    bio: 'Experienced electrician specializing in residential and commercial electrical installations, repairs and maintenance. Fast response time and reliable service delivery.',
-    joined: '2023',
+  // =========================
+  // FETCH WORKER + REVIEWS + JOBS
+  // =========================
+  const fetchWorker = async () => {
+    try {
+      setLoading(true)
+
+      const [workerRes, reviewRes] = await Promise.all([
+        API.get(`/users/${id}`),
+        API.get(`/reviews/worker/${id}`).catch(() => ({ data: { reviews: [], stats: null } })),
+      ])
+
+      // Handle multiple possible response structures for worker data
+      const workerData =
+        workerRes?.data?.data || workerRes?.data?.user || workerRes?.data
+
+      setWorker(workerData)
+
+      setReviews(reviewRes?.data?.reviews || [])
+      setRatingStats(reviewRes?.data?.stats || null)
+
+      // Fetch jobs for this worker 
+      try {
+        const res = await API.get(`/jobs/worker/public/${id}`)
+        const jobsData = res?.data?.data?.jobs || res?.data || []
+        setJobs(Array.isArray(jobsData) ? jobsData : [])
+      } catch (jobErr) {
+        console.error('Failed to fetch worker jobs:', jobErr)
+        setJobs([])
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const portfolio = [
-    {
-      id: 1,
-      image: '/content/images/download.jpeg',
-      title: 'Office Electrical Installation',
-      location: 'Lekki, Lagos',
-    },
-    {
-      id: 2,
-      image: '/content/images/download.jpeg',
-      title: 'Apartment Wiring Setup',
-      location: 'Yaba, Lagos',
-    },
-    {
-      id: 3,
-      image: '/content/images/download.jpeg',
-      title: 'Generator Connection Project',
-      location: 'Ikeja, Lagos',
-    },
-  ]
+  useEffect(() => {
+    if (id) fetchWorker()
+  }, [id])
 
-  const reviews = [
-    {
-      id: 1,
-      name: 'Sarah K.',
-      rating: 5,
-      comment: 'Very professional and arrived on time. Excellent work quality.',
-      date: '2 weeks ago',
-    },
-    {
-      id: 2,
-      name: 'Michael A.',
-      rating: 4,
-      comment: 'Quick response and fixed the issue perfectly.',
-      date: '1 month ago',
-    },
-  ]
+  if (loading)
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+        Loading worker...
+      </div>
+    )
 
-  const skills = [
-    'House Wiring',
-    'Electrical Repairs',
-    'Generator Installation',
-    'Socket Installation',
-    'Industrial Electrical Work',
-  ]
+  if (error)
+    return (
+      <div className="min-h-screen bg-gray-950 text-red-500 flex items-center justify-center">
+        {error}
+      </div>
+    )
+
+  if (!worker) return null
+
+  const phoneLink = worker.phone
+    ? `https://wa.me/${worker.phone.replace(/\D/g, '')}`
+    : '#'
+
+  const filteredJobs = jobs.filter(job => {
+    if (selectedJobStatus === 'all') return true
+    return job.status === selectedJobStatus
+  })
+
+  // Compute completed jobs for this worker by checking assigned worker id and job status
+  const completedJobsCount = jobs.filter(j => {
+    const assignedId = j.assignedWorker?._id || j.assignedWorker?.id
+    return String(assignedId) === String(id) && j.status === 'completed'
+  }).length
 
   return (
-    <div className="min-h-screen bg-gray-100 p-5 md:p-10">
+    <div className="min-h-screen bg-gray-950 text-white p-5 md:p-10">
 
-      {/* PROFILE HEADER */}
-      <div className="bg-white rounded-3xl shadow overflow-hidden mb-8">
+      {/* ================= PROFILE HEADER ================= */}
+      <div className="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden mb-8">
 
-        {/* COVER */}
-        <div className="h-52 bg-gradient-to-r from-orange-500 to-orange-400"></div>
+        <div className="h-52 bg-linear-to-r from-orange-600 to-orange-500" />
 
         <div className="p-6 md:p-8 relative">
 
           {/* PROFILE IMAGE */}
           <div className="absolute -top-16 left-6 md:left-8">
-            <div className="w-32 h-32 rounded-3xl bg-white p-2 shadow-xl">
+            <div className="w-32 h-32 rounded-3xl bg-gray-900 p-2 border border-gray-700">
               <img
-                src="/content/images/download.jpeg"
-                alt="worker"
+                src={worker.profilePhoto || worker.user?.profilePhoto || '/images/cleaner.jpeg'}
+                alt={worker.fullName}
                 className="w-full h-full object-cover rounded-2xl"
               />
             </div>
           </div>
 
-          <div className="pt-20 flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+          <div className="pt-20 flex flex-col lg:flex-row justify-between gap-6">
 
             {/* LEFT */}
             <div>
 
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-3xl font-bold">
-                  {worker.name}
+                  {worker.fullName}
                 </h1>
 
-                {worker.verified && (
-                  <div className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full flex items-center gap-2 text-sm font-medium">
-                    <FaCheckCircle />
-                    Verified
-                  </div>
+                {worker.verification?.isVerified && (
+                  <span className="bg-green-600 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                    <FaCheckCircle /> Verified
+                  </span>
                 )}
-
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  worker.available
-                    ? 'bg-green-100 text-green-600'
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {worker.available ? 'Available' : 'Offline'}
-                </div>
               </div>
 
-              <p className="text-orange-500 text-lg font-medium mt-2">
+              <p className="text-orange-400 text-lg mt-2">
                 {worker.skill}
               </p>
 
-              <div className="flex flex-wrap items-center gap-4 text-gray-500 mt-4">
+              <div className="flex flex-wrap gap-4 text-gray-400 mt-4">
 
                 <p className="flex items-center gap-2">
                   <FaMapMarkerAlt />
-                  {worker.location}
+                  {worker.location?.city}, {worker.location?.state}
                 </p>
 
                 <p className="flex items-center gap-2">
                   <FaBriefcase />
-                  {worker.completedJobs} Jobs Completed
+                  {completedJobsCount} Jobs
                 </p>
 
-                <p className="flex items-center gap-2 text-yellow-500 font-medium">
+                <p className="flex items-center gap-2 text-yellow-400">
                   <FaStar />
-                  {worker.rating} ({worker.totalReviews} Reviews)
+                  {ratingStats?.avgRating?.toFixed(1) || worker.rating || 0}
+                  ({ratingStats?.totalReviews || worker.totalReviews || 0})
                 </p>
 
               </div>
 
-              <div className="flex flex-wrap gap-3 mt-5">
-
-                <div className="bg-gray-100 px-4 py-2 rounded-xl text-sm">
-                  Responds in {worker.responseTime}
+              <div className="mt-5 flex flex-wrap gap-3">
+                <div className="bg-gray-800 px-4 py-2 rounded-xl text-sm">
+                  {worker.yearsOfExperience || 0} Years Experience
                 </div>
-
-                <div className="bg-gray-100 px-4 py-2 rounded-xl text-sm">
-                  {worker.responseRate} Response Rate
-                </div>
-
-                <div className="bg-gray-100 px-4 py-2 rounded-xl text-sm">
-                  {worker.experience} Experience
-                </div>
-
               </div>
 
             </div>
 
-            {/* RIGHT */}
-            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+            {/* ACTIONS */}
+            <div className="flex flex-col sm:flex-row gap-4">
 
-              <button className="bg-orange-500 text-white px-6 py-4 rounded-2xl font-medium flex items-center justify-center gap-3">
-                <FaComments />
-                Contact Worker
-              </button>
-
-              <button className="bg-green-500 text-white px-6 py-4 rounded-2xl font-medium flex items-center justify-center gap-3">
+              <a
+                href={phoneLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`px-6 py-4 rounded-2xl flex items-center justify-center gap-2 font-medium
+                  ${worker.phone
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-gray-700 opacity-50 cursor-not-allowed'
+                  }`}
+              >
                 <FaPhone />
-                Call Worker
+                WhatsApp
+              </a>
+
+              <button
+                disabled={!worker.phone}
+                onClick={() => worker.phone && (window.location.href = `tel:${worker.phone}`)}
+                className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 px-6 py-4 rounded-2xl flex items-center justify-center gap-2 font-medium"
+              >
+                <FaComments />
+                Contact
               </button>
 
             </div>
 
           </div>
-
         </div>
-
       </div>
 
-      {/* STATS */}
-      <div className="grid md:grid-cols-4 gap-5 mb-8">
+      {/* ================= TABS ================= */}
+      <div className="flex gap-3 mb-8 overflow-x-auto">
 
-        <div className="bg-white rounded-3xl shadow p-6">
-          <p className="text-gray-500 mb-2">Average Rating</p>
-          <h2 className="text-3xl font-bold text-yellow-500 flex items-center gap-2">
-            <FaStar />
-            {worker.rating}
-          </h2>
-        </div>
-
-        <div className="bg-white rounded-3xl shadow p-6">
-          <p className="text-gray-500 mb-2">Completed Jobs</p>
-          <h2 className="text-3xl font-bold">
-            {worker.completedJobs}
-          </h2>
-        </div>
-
-        <div className="bg-white rounded-3xl shadow p-6">
-          <p className="text-gray-500 mb-2">Experience</p>
-          <h2 className="text-3xl font-bold">
-            {worker.experience}
-          </h2>
-        </div>
-
-        <div className="bg-white rounded-3xl shadow p-6">
-          <p className="text-gray-500 mb-2">Member Since</p>
-          <h2 className="text-3xl font-bold">
-            {worker.joined}
-          </h2>
-        </div>
-
-      </div>
-
-      {/* TABS */}
-      <div className="flex flex-wrap gap-3 mb-8 overflow-x-auto">
-
-        {['about', 'portfolio', 'reviews'].map((tab) => (
+        {['about', 'portfolio', 'jobs', 'reviews'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-5 py-3 rounded-2xl capitalize transition ${
-              activeTab === tab
-                ? 'bg-orange-500 text-white'
-                : 'bg-white shadow'
-            }`}
+            className={`px-5 py-3 rounded-xl capitalize transition
+              ${activeTab === tab
+                ? 'bg-orange-600'
+                : 'bg-gray-900 border border-gray-800'
+              }`}
           >
             {tab}
           </button>
@@ -242,137 +219,135 @@ const WorkerProfilePage = () => {
 
       </div>
 
-      {/* ABOUT */}
+      {/* ================= ABOUT ================= */}
       {activeTab === 'about' && (
         <div className="grid lg:grid-cols-3 gap-6">
 
-          {/* BIO */}
-          <div className="lg:col-span-2 bg-white rounded-3xl shadow p-6">
-
-            <h2 className="text-2xl font-bold mb-5">
-              About Worker
-            </h2>
-
-            <p className="text-gray-600 leading-8">
-              {worker.bio}
+          <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-3xl p-6">
+            <h2 className="text-2xl font-bold mb-4">About</h2>
+            <p className="text-gray-400 leading-7">
+              {worker.bio || 'No bio available'}
             </p>
-
           </div>
 
-          {/* SKILLS */}
-          <div className="bg-white rounded-3xl shadow p-6">
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6">
+            <h2 className="text-2xl font-bold mb-4">Skills</h2>
 
-            <h2 className="text-2xl font-bold mb-5">
-              Skills & Services
-            </h2>
-
-            <div className="flex flex-wrap gap-3">
-
-              {skills.map((skill, index) => (
-                <div
-                  key={index}
-                  className="bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm font-medium"
+            <div className="flex flex-wrap gap-2">
+              {(worker.skills || []).map((s, i) => (
+                <span
+                  key={i}
+                  className="bg-orange-600/20 text-orange-400 px-3 py-1 rounded-full text-sm"
                 >
-                  {skill}
-                </div>
+                  {s}
+                </span>
               ))}
-
             </div>
-
           </div>
 
         </div>
       )}
 
-      {/* PORTFOLIO */}
+      {/* ================= PORTFOLIO ================= */}
       {activeTab === 'portfolio' && (
-        <div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-          <div className="flex items-center justify-between mb-6">
+          {(worker.portfolio || []).length === 0 ? (
+            <p className="text-gray-400">No portfolio yet</p>
+          ) : (
+            worker.portfolio.map((p, i) => (
+              <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
 
-            <div>
-              <h2 className="text-2xl font-bold">
-                Portfolio Projects
-              </h2>
+                {p.image && (
+                  <img
+                    src={p.image}
+                    alt={p.title}
+                    className="h-48 w-full object-cover"
+                  />
+                )}
 
-              <p className="text-gray-500 mt-1">
-                Previous completed work by the artisan
-              </p>
-            </div>
-
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-            {portfolio.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white rounded-3xl overflow-hidden shadow"
-              >
-
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-64 object-cover"
-                />
-
-                <div className="p-5">
-
-                  <h3 className="text-xl font-bold mb-2">
-                    {item.title}
-                  </h3>
-
-                  <p className="text-gray-500 flex items-center gap-2">
-                    <FaMapMarkerAlt />
-                    {item.location}
-                  </p>
-
+                <div className="p-4">
+                  <h3 className="font-bold">{p.title}</h3>
+                  <p className="text-gray-400 text-sm">{p.location}</p>
                 </div>
 
               </div>
-            ))}
-
-          </div>
+            ))
+          )}
 
         </div>
       )}
 
-      {/* REVIEWS */}
+      {/* ================= JOBS ================= */}
+      {activeTab === 'jobs' && (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold mb-4">Completed Jobs</h2>
+
+          {/* Only show completed jobs for this worker */}
+          {(() => {
+            const completedJobs = jobs
+
+            if (completedJobs.length === 0) {
+              return (
+                <div className="bg-gray-900 border border-gray-800 rounded-3xl p-8 text-center">
+                  <p className="text-gray-400">No completed jobs found</p>
+                </div>
+              )
+            }
+
+            return completedJobs.map(job => (
+              <div key={job._id} className="bg-gray-900 border border-gray-800 rounded-3xl p-6">
+                <div className="flex justify-between items-start mb-5">
+                  <div>
+                    <h3 className="text-xl font-bold">{job.title}</h3>
+                    <p className="text-gray-400 mt-2">Budget: ₦{job.budget || 'N/A'}</p>
+                    <p className="text-gray-500 text-sm mt-1">Posted by: {job.postedBy?.fullName || job.postedBy?.name || 'Unknown'}</p>
+                  </div>
+
+                  <span className="px-4 py-2 rounded-xl text-sm whitespace-nowrap bg-green-900/20 text-green-400">completed</span>
+                </div>
+
+                <div className="mb-5">
+                  <p className="text-gray-300 mb-3">{job.description}</p>
+                </div>
+
+              </div>
+            ))
+          })()}
+
+        </div>
+      )}
+
+      {/* ================= REVIEWS ================= */}
       {activeTab === 'reviews' && (
         <div className="space-y-5">
 
-          {reviews.map((review) => (
-            <div
-              key={review.id}
-              className="bg-white rounded-3xl shadow p-6"
-            >
+          {(reviews || []).length === 0 ? (
+            <p className="text-gray-400">No reviews yet</p>
+          ) : (
+            reviews.map(r => (
+              <div key={r._id} className="bg-gray-900 border border-gray-800 p-5 rounded-2xl">
 
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                <div className="flex justify-between items-center">
 
-                <div>
-                  <h3 className="text-xl font-bold">
-                    {review.name}
-                  </h3>
-
-                  <p className="text-sm text-gray-400 mt-1">
-                    {review.date}
+                  <p className="font-bold">
+                    {r.reviewer?.fullName}
                   </p>
+
+                  <div className="text-yellow-400 flex items-center gap-1">
+                    <FaStar />
+                    {r.rating}
+                  </div>
+
                 </div>
 
-                <div className="flex items-center gap-2 text-yellow-500 text-lg">
-                  {[...Array(review.rating)].map((_, i) => (
-                    <FaStar key={i} />
-                  ))}
-                </div>
+                <p className="text-gray-400 mt-2">
+                  {r.comment}
+                </p>
 
               </div>
-
-              <p className="text-gray-600 leading-7">
-                {review.comment}
-              </p>
-
-            </div>
-          ))}
+            ))
+          )}
 
         </div>
       )}
@@ -382,4 +357,3 @@ const WorkerProfilePage = () => {
 }
 
 export default WorkerProfilePage
-

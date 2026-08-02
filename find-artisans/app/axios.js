@@ -10,8 +10,8 @@ const API = axios.create({
 // ✅ REQUEST INTERCEPTOR (ADD TOKEN AUTOMATICALLY)
 API.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token'); // or redux if you prefer
-
+    const token = localStorage.getItem('token'); 
+  console.log( token); 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,7 +29,7 @@ API.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       console.log('Unauthorized - token expired or invalid');
-      // later you can auto logout here
+      localStorage.removeItem('token');
     }
 
     return Promise.reject(error);

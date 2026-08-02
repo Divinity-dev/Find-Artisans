@@ -13,7 +13,7 @@ import {
 } from 'react-icons/fa';
 
 import { useDispatch, useSelector } from 'react-redux';
-
+import { toast } from 'react-toastify'
 import {
   registerStart,
   registerSuccess,
@@ -111,6 +111,9 @@ const SignupPage = () => {
         handleRedirect(data.user);
 
       } catch (error) {
+        toast.error(
+          error.response?.data?.message || 'Registration failed'
+        );
         dispatch(
           registerFail(
             error.response?.data?.message || 'Registration failed'
