@@ -8,6 +8,7 @@ import { State, City } from 'country-state-city';
 import { lgas } from 'nigerian-states-and-lgas';
 import { useRouter } from 'next/navigation';
 import imageCompression from 'browser-image-compression';
+import { toast } from 'react-toastify'
 
 const PostJobPage = () => {
 const [imagePreviews, setImagePreviews] = React.useState([]);
@@ -144,6 +145,10 @@ setTimeout(() => {
     helpers.resetForm();
     setImagePreviews([]);
   } catch (error) {
+    toast.error(
+      error?.response?.data?.message ||
+        'Failed to post job. Please try again.'
+    );
     helpers.setStatus({
       type: 'error',
       message:

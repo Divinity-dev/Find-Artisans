@@ -118,7 +118,7 @@ const ForgotPassword = () => {
       setShowOtpModal(false);
       setOtp(['', '', '', '', '', '']);
 
-      router.push(`/reset-password?email=${email}`);
+      router.push(`/reset-password?email=${encodeURIComponent(email)}`);
     } catch (err) {
       setServerError(
         err?.response?.data?.message || 'Invalid or expired OTP'

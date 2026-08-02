@@ -10,11 +10,16 @@ import {
 } from 'react-icons/fa'
 
 import API from '../axios'
+import { toast } from 'react-toastify'
+import { useSelector } from 'react-redux';
+import { useRouter } from "next/navigation";
+import VerifyAccountModal from "@/components/VerifyAccountModal";
 
 const CustomerDashboard = () => {
   const [activeTab, setActiveTab] = useState('jobs')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
 
   const [profile, setProfile] = useState(null)
   const [jobs, setJobs] = useState([])
@@ -71,9 +76,9 @@ const CustomerDashboard = () => {
       setLoading(true)
       await API.patch(`/jobs/${jobId}/assign`, { workerId })
       await fetchJobs()
-      alert('Worker assigned successfully')
+      toast.success('Worker assigned successfully')
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to assign worker')
+      toast.error(err?.response?.data?.message || 'Failed to assign worker')
     } finally {
       setLoading(false)
     }
@@ -84,7 +89,7 @@ const CustomerDashboard = () => {
       await API.patch(`/jobs/${jobId}/status`, { status })
       await fetchJobs()
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to update status')
+      toast.error(err?.response?.data?.message || 'Failed to update status')
     }
   }
 
@@ -108,12 +113,12 @@ const CustomerDashboard = () => {
  const submitComplaint = async () => {
   try {
     if (!complaint.title || !complaint.description) {
-      return alert('Please fill all fields')
+      return toast.error('Please fill all fields')
     }
 
     await API.post('/complaints', complaint)
 
-    alert('Complaint submitted successfully')
+    toast.success('Complaint submitted successfully')
 
     setComplaint({
       title: '',
@@ -122,12 +127,30 @@ const CustomerDashboard = () => {
 
     fetchMyComplaints()
   } catch (err) {
-    alert(
+    toast.error(
       err?.response?.data?.message ||
       'Failed to submit complaint'
     )
   }
 }
+
+useEffect(() => {
+  fetchProfile()
+  fetchJobs()
+  fetchMyComplaints()
+}, [])
+
+const { user } = useSelector((state) => state.auth);
+const router = useRouter();
+useEffect(() => {
+  if (
+    profile &&
+    !profile?.verified &&
+    !profile?.verification?.isVerified
+  ) {
+    setShowVerifyModal(true)
+  }
+}, [profile])
 
   // ========================= STATUS STYLE =========================
   const statusStyle = (status) => {
@@ -164,11 +187,11 @@ const submitReview = async () => {
 
     fetchJobs()
 
-    alert('Review submitted successfully')
+    toast.success('Review submitted successfully')
   } catch (err) {
     console.log(err.response?.data)
 
-    alert(
+    toast.error(
       err?.response?.data?.message ||
       'Failed to submit review'
     )
@@ -178,7 +201,13 @@ const submitReview = async () => {
   // ========================= UI =========================
   return (
     <div className="min-h-screen bg-gray-950 text-white p-5 md:p-10">
-
+<VerifyAccountModal
+  isOpen={showVerifyModal}
+  onClose={() => setShowVerifyModal(false)}
+  onVerify={() =>
+    router.push("/customer-edit?scrollTo=verification")
+  }
+/>
       {/* HEADER */}
       <div className="flex justify-between mb-8">
         <div>

@@ -11,6 +11,7 @@ import {
   FaCheck,
   FaTimes,
 } from 'react-icons/fa'
+import { toast } from 'react-toastify'
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('stats')
@@ -24,7 +25,6 @@ const AdminDashboard = () => {
   const [customers, setCustomers] = useState([])
   const [complaints, setComplaints] = useState([])
   const [jobs, setJobs] = useState([])
-
   const [page, setPage] = useState({
     verifications: 1,
     workers: 1,
@@ -83,7 +83,7 @@ const AdminDashboard = () => {
 
       setVerifications((prev) => prev.filter((w) => w._id !== id))
     } catch (err) {
-      alert(err.response?.data?.message || 'Action failed')
+      toast.error(err.response?.data?.message || 'Action failed')
     }
   }
 
@@ -97,8 +97,9 @@ const AdminDashboard = () => {
       setComplaints((prev) =>
         prev.map((c) => (c._id === id ? { ...c, status } : c))
       )
+      toast.success('Complaint status updated')
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update complaint')
+      toast.error(err.response?.data?.message || 'Failed to update complaint')
     }
   }
 

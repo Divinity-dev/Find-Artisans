@@ -6,11 +6,14 @@ import * as Yup from 'yup';
 import API from '../axios';
 import { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { toast } from 'react-toastify'
 
 const ResetPassword = () => {
   const router = useRouter();
   const params = useSearchParams();
-  const email = params.get('email');
+  const email = decodeURIComponent(
+  params.get("email") || ""
+);
 
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
@@ -44,13 +47,15 @@ const ResetPassword = () => {
           email,
           password: values.password,
         });
-
+         toast.success('Password reset successful! Please log in.');
         router.push('/login');
       } catch (err) {
         setServerError(
           err.response?.data?.message || 'Failed to reset password'
         );
-        console.log(err);
+        toast.error(
+          err.response?.data?.message || 'Failed to reset password'
+        );
       } finally {
         setLoading(false);
       }
@@ -59,7 +64,7 @@ const ResetPassword = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
-      <div className="bg-gray-900 p-6 rounded-xl w-[400px]">
+      <div className="bg-gray-900 p-6 rounded-xl w-100">
 
         <h1 className="text-xl font-bold mb-4">
           Reset Password

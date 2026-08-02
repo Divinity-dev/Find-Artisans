@@ -2,6 +2,9 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import VerifyAccountModal from "@/components/VerifyAccountModal";
+import { useSelector } from 'react-redux';
+import { useRouter } from "next/navigation";
 
 import {
   FaMapMarkerAlt,
@@ -18,7 +21,9 @@ import {
   FaArrowRight,
 } from 'react-icons/fa'
 
+
 import API from '../axios'
+import { toast } from 'react-toastify'
 
 const WorkerDashboard = () => {
   // =====================================
@@ -29,6 +34,7 @@ const WorkerDashboard = () => {
   const [error, setError] = useState('')
   const [reviewModal, setReviewModal] = useState(false)
 const [selectedJob, setSelectedJob] = useState(null)
+const [showVerifyModal, setShowVerifyModal] = useState(false);
 
 const [review, setReview] = useState({
   rating: 5,
@@ -78,15 +84,21 @@ const [review, setReview] = useState({
       const workerData = extractData(response, null)
 
       setWorker(workerData)
-      setIsAvailable(workerData?.isAvailable || false)
+      // setIsAvailable(workerData?.isAvailable || false)
     } catch (error) {
       console.log(error)
     }
   }
 
   
-
-
+const { user } = useSelector((state) => state.auth);
+console.log(user)
+const router = useRouter();
+useEffect(() => {
+  if (worker && !worker?.verified && !worker?.verification?.isVerified) {
+    setShowVerifyModal(true);
+  }
+}, [worker]);
   // =====================================
   // FETCH ACTIVE JOBS
   // =====================================
@@ -144,10 +156,11 @@ const [review, setReview] = useState({
   const acceptJob = async (jobId) => {
     try {
       await API.patch(`/jobs/${jobId}/accept`)
+      toast.success('Job accepted successfully')
       fetchActiveJobs()
     } catch (error) {
       console.log(error)
-      alert('Failed to accept job')
+      toast.error('Failed to accept job')
     }
   }
 
@@ -157,12 +170,12 @@ const [review, setReview] = useState({
   const completeJob = async (jobId) => {
     try {
       await API.patch(`/jobs/${jobId}/complete`)
-
+      toast.success('Job marked as completed')
       fetchActiveJobs()
       fetchCompletedJobs()
     } catch (error) {
       console.log(error)
-      alert('Failed to complete job')
+      toast.error('Failed to complete job')
     }
   }
 
@@ -216,9 +229,9 @@ const submitCustomerReview = async () => {
 
     fetchCompletedJobs()
 
-    alert('Customer review submitted')
+    toast.success('Customer review submitted')
   } catch (err) {
-    alert(
+    toast.error(
       err?.response?.data?.message ||
       'Failed to submit review'
     )
@@ -249,6 +262,13 @@ const totalEarnings = completedJobs.reduce(
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-5 md:p-10">
+      <VerifyAccountModal
+  isOpen={showVerifyModal}
+  onClose={() => setShowVerifyModal(false)}
+ onVerify={() =>
+  router.push("/worker-edit?scrollTo=verification")
+}
+/>
       {/* =====================================
           HEADER
       ===================================== */}

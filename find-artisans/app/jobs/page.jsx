@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import API from '../axios'; // adjust path
+import API from '../axios'; 
 
 import {
   MapPin,
@@ -10,6 +10,7 @@ import {
   Briefcase,
   Filter,
 } from 'lucide-react';
+import { toast } from 'react-toastify'
 
 const JobsPage = () => {
   const [jobs, setJobs] = useState([]);
@@ -23,13 +24,16 @@ const [applyingJobId, setApplyingJobId] = useState(null)
     fetchJobs();
   }, []);
 
+ 
+
   const fetchJobs = async () => {
   try {
     const res = await API.get('/jobs');
 
-    const jobsData = res?.data?.data; // backend "data"
+    const jobsData = res?.data?.data; 
 
     setJobs(Array.isArray(jobsData) ? jobsData : []);
+    
   } catch (error) {
     console.error(error);
     setJobs([]);
@@ -54,6 +58,10 @@ const [applyingJobId, setApplyingJobId] = useState(null)
     ),
   ];
 
+   useEffect(() => {
+  console.log("Selected filter:", filter);
+}, [filter]);
+
   const handleDelete = async () => {
   if (!deleteJobId) return;
 
@@ -63,11 +71,11 @@ const [applyingJobId, setApplyingJobId] = useState(null)
     await API.delete(`/jobs/${deleteJobId}`);
 
     setJobs((prev) => prev.filter((job) => job._id !== deleteJobId));
-
+toast.success('Job deleted successfully');
     setDeleteJobId(null);
   } catch (error) {
     console.error(error);
-    alert('Failed to delete job');
+    toast.error('Failed to delete job');
   } finally {
     setIsDeleting(false);
   }
@@ -87,13 +95,13 @@ const applyToJob = async (jobId) => {
 
     await API.post(`/jobs/${jobId}/apply`)
 
-    alert('Application submitted successfully')
+    toast.success('Application submitted successfully')
 
     fetchJobs()
   } catch (error) {
     console.error(error)
 
-    alert(
+    toast.error(
       error?.response?.data?.message ||
       'Failed to apply for job'
     )

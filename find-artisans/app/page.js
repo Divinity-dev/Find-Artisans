@@ -7,12 +7,14 @@ import API from '@/app/axios';
 import { State, City } from 'country-state-city';
 import { lgas } from 'nigerian-states-and-lgas';
 import Link from 'next/link';
+import { motion, AnimatePresence } from "framer-motion";
 
 import {
   FaStar,
   FaWhatsapp,
   FaCheckCircle,
   FaSearch,
+  FaQuoteLeft,
   FaShieldAlt,
   FaBolt,
   FaUserCheck,
@@ -28,6 +30,7 @@ const Page = () => {
   const [selectedState, setSelectedState] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedLGA, setSelectedLGA] = useState('');
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
   // ======================
   // FETCH WORKERS
@@ -78,6 +81,59 @@ const Page = () => {
       return matchSearch && matchState && matchCity && matchLGA;
     });
   }, [workers, searchName, selectedState, selectedCity, selectedLGA]);
+
+  const testimonials = [
+  {
+    id: 1,
+    type: "Customer",
+    name: "Chinedu O.",
+    location: "Lagos",
+    image: "/images/worker3.jpeg",
+    message:
+      "I found a verified plumber within 15 minutes. The service was excellent and affordable.",
+    rating: 5,
+  },
+  {
+    id: 2,
+    type: "Worker",
+    name: "Aisha M.",
+    location: "Abuja",
+    image: "/images/worker1.jpeg",
+    message:
+      "Since joining FindArtisans, I've gained more customers than ever before.",
+    rating: 5,
+  },
+  {
+    id: 3,
+    type: "Customer",
+    name: "David E.",
+    location: "Port Harcourt",
+    image: "/images/worker2.jpeg",
+    message:
+      "The ratings and verification gave me confidence. My electrician did a fantastic job.",
+    rating: 5,
+  },
+  {
+    id: 4,
+    type: "Worker",
+    name: "Blessing K.",
+    location: "Benin",
+    image: "/images/electrician.jpeg",
+    message:
+      "FindArtisans has helped me grow my business and reach more clients.",
+    rating: 5,
+  },
+];
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    setCurrentTestimonial((prev) =>
+      prev === testimonials.length - 1 ? 0 : prev + 1
+    );
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, []);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -287,6 +343,81 @@ const Page = () => {
           </p>
         </div>
       </section>
+      {/* ================= TESTIMONIALS ================= */}
+
+<section className="py-20 px-5 md:px-10 bg-gray-950">
+
+  <div className="text-center mb-12">
+    <h2 className="text-4xl font-bold">
+      What Our Users Say
+    </h2>
+
+    <p className="text-gray-400 mt-3">
+      Trusted by customers and artisans across Nigeria.
+    </p>
+  </div>
+
+  <div className="max-w-4xl mx-auto">
+
+    <AnimatePresence mode="wait">
+
+      <motion.div
+        key={testimonials[currentTestimonial].id}
+        initial={{ opacity: 0, x: 80 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -80 }}
+        transition={{ duration: 0.7 }}
+        className="bg-gray-900 border border-gray-800 rounded-3xl p-10"
+      >
+
+        <FaQuoteLeft className="text-4xl text-orange-500 mb-6" />
+
+        <p className="text-xl text-gray-300 leading-9 italic">
+          "{testimonials[currentTestimonial].message}"
+        </p>
+
+        <div className="flex mt-6">
+          {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
+            <FaStar
+              key={i}
+              className="text-yellow-400 mr-1"
+            />
+          ))}
+        </div>
+
+        <div className="flex items-center mt-8">
+
+          <Image
+            src={testimonials[currentTestimonial].image}
+            alt={testimonials[currentTestimonial].name}
+            width={70}
+            height={70}
+            className="rounded-full object-cover h-20 w-20"
+          />
+
+          <div className="ml-5">
+
+            <h3 className="font-bold text-lg">
+              {testimonials[currentTestimonial].name}
+            </h3>
+
+            <p className="text-gray-400">
+              {testimonials[currentTestimonial].type}
+              {" • "}
+              {testimonials[currentTestimonial].location}
+            </p>
+
+          </div>
+
+        </div>
+
+      </motion.div>
+
+    </AnimatePresence>
+
+  </div>
+
+</section>
 
       {/* ================= CATEGORY ================= */}
       {/* <section className="py-16 px-5 md:px-10 max-w-7xl mx-auto">

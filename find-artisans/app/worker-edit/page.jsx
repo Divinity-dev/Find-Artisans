@@ -10,12 +10,13 @@ import {
   FaSpinner,
   FaMapMarkerAlt,
 } from 'react-icons/fa'
-
+import { useSearchParams } from 'next/navigation'
 import API from '../axios'
 import { State, City } from 'country-state-city'
 import { lgas } from 'nigerian-states-and-lgas'
 import { useDispatch } from 'react-redux'
 import { setUser } from '@/redux/slices/authSlice'
+import { toast } from 'react-toastify'
 
 const WorkerProfileEditPage = () => {
   // =========================================
@@ -46,7 +47,7 @@ const WorkerProfileEditPage = () => {
     const addPortfolioItem = async () => {
       try {
         if (!portfolioForm.title || !portfolioForm.description) {
-          alert('Title and description required')
+          toast.error('Title and description required')
           return
         }
 
@@ -64,10 +65,10 @@ const WorkerProfileEditPage = () => {
           description: '',
         })
 
-        alert('Portfolio item saved')
+        toast.success('Portfolio item saved')
       } catch (err) {
         console.log(err)
-        alert('Failed to add portfolio')
+        toast.error('Failed to add portfolio')
       }
     }
 const dispatch = useDispatch()
@@ -89,8 +90,6 @@ const uploadImageToCloudinary = async (file) => {
   )
 
   const result = await response.json()
-
-  console.log("CLOUDINARY FULL RESPONSE:", result)
 
   if (!response.ok) {
     throw new Error(result?.error?.message || 'Cloudinary upload failed')
@@ -126,6 +125,8 @@ const uploadImageToCloudinary = async (file) => {
   const localGovernments = formData.location.state
     ? lgas(formData.location.state)
     : []
+
+   
 
   // =========================================
   // FETCH PROFILE
@@ -169,10 +170,32 @@ const uploadImageToCloudinary = async (file) => {
 
       setSkills(user?.skills ?? [])
     } catch (error) {
-      console.log(error)
       setError('Failed to load profile')
     }
   }
+
+  const searchParams = useSearchParams()
+
+useEffect(() => {
+  const scrollTo = searchParams.get('scrollTo')
+
+  if (scrollTo !== 'verification') return
+
+  const timer = setTimeout(() => {
+    const element = document.getElementById('verification')
+
+    console.log(element) // check if it exists
+
+    element?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    })
+  }, 1000)
+
+  return () => clearTimeout(timer)
+}, [searchParams])
+
+
 
   // =========================================
   // LOAD PAGE
@@ -270,12 +293,12 @@ const uploadImageToCloudinary = async (file) => {
 
 dispatch(setUser(res.data.user))
       dispatch(setUser(res.data.user))
-      alert(
+      toast.success(
         'Profile updated successfully'
       )
     } catch (error) {
       console.log(error)
-      alert('Failed to save profile')
+      toast.error('Failed to save profile')
     } finally {
       setSaving(false)
     }
@@ -287,12 +310,12 @@ dispatch(setUser(res.data.user))
 const submitVerification = async () => {
   try {
     if (!governmentId) {
-      alert('Please upload your ID');
+      toast.error('Please upload your ID');
       return;
     }
 
     if (!formData.nin || !isValidNIN(formData.nin)) {
-      alert('NIN must be exactly 11 digits');
+      toast.error('NIN must be exactly 11 digits');
       return;
     }
 
@@ -327,10 +350,10 @@ const submitVerification = async () => {
       governmentId: documentUrl,
     });
 
-    alert('Verification submitted successfully');
+    toast.success('Verification submitted successfully');
   } catch (error) {
     console.log(error);
-    alert(
+    toast.error(
       error?.response?.data?.message ||
         error.message ||
         'Failed to submit verification'
@@ -924,7 +947,7 @@ onChange={async (e) => {
       {/* =========================================
           VERIFICATION
       ========================================= */}
-      <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6">
+      <div id="verification" className="bg-gray-900 border border-gray-800 rounded-3xl p-6">
 
         <div className="flex items-center gap-3 mb-5">
 

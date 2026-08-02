@@ -13,6 +13,7 @@ import {
   FaUserShield,
   FaClock,
 } from 'react-icons/fa'
+import { toast } from 'react-toastify'
 
 const JobDetailsPage = () => {
   const { id } = useParams()
@@ -46,14 +47,14 @@ console.log(job)
         `/jobs/${id}/apply`
       )
 
-      alert(data.message)
+      toast.success(data.message)
 
       setJob(prev => ({
         ...prev,
         hasApplied: true,
       }))
     } catch (error) {
-      alert(
+      toast.error(
         error.response?.data?.message ||
           'Failed to apply'
       )
