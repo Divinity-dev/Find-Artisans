@@ -337,10 +337,18 @@ useEffect(() => {
 
         {/* VIDEO SECTION */}
         <div className="mt-16 bg-gray-900 border border-gray-800 rounded-2xl p-10 text-center">
-          <FaPlayCircle className="text-5xl mx-auto text-orange-500 mb-3" />
-          <p className="text-gray-400">
-            Product demo video coming soon
-          </p>
+         
+          <video
+  autoPlay
+  muted
+  loop
+  playsInline
+   controls
+  className="w-full h-100 rounded-xl shadow-lg object-cover"
+>
+  <source src="/findartisans_final_with_audio.mp4" type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
         </div>
       </section>
       {/* ================= TESTIMONIALS ================= */}
