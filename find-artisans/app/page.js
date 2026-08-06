@@ -344,7 +344,7 @@ useEffect(() => {
   loop
   playsInline
    controls
-  className="w-full h-100 rounded-xl shadow-lg object-cover"
+   className="w-full md:h-100 rounded-xl shadow-lg object-cover"
 >
   <source src="/findartisans_final_with_audio.mp4" type="video/mp4" />
   Your browser does not support the video tag.
