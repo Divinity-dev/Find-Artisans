@@ -11,6 +11,7 @@ import {
   FaBriefcase,
   FaComments,
   FaPhone,
+    FaWhatsapp
 } from 'react-icons/fa'
 
 const WorkerProfilePage = () => {
@@ -27,6 +28,7 @@ const WorkerProfilePage = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('about')
+  const [contact, setContact] = useState(false)
 
   // =========================
   // FETCH WORKER + REVIEWS + JOBS
@@ -83,9 +85,11 @@ const WorkerProfilePage = () => {
 
   if (!worker) return null
 
-  const phoneLink = worker.phone
-    ? `https://wa.me/${worker.phone.replace(/\D/g, '')}`
-    : '#'
+ const phoneLink = worker?.user?.phone
+  ? `https://wa.me/${worker?.user?.phone
+      .replace(/\D/g, "")
+      .replace(/^0/, "234")}`
+  : "#";
 
   const filteredJobs = jobs.filter(job => {
     if (selectedJobStatus === 'all') return true
@@ -176,23 +180,32 @@ const WorkerProfilePage = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`px-6 py-4 rounded-2xl flex items-center justify-center gap-2 font-medium
-                  ${worker.phone
+                  ${worker?.user?.phone
                     ? 'bg-green-600 hover:bg-green-700'
                     : 'bg-gray-700 opacity-50 cursor-not-allowed'
                   }`}
               >
-                <FaPhone />
+                <FaWhatsapp />
                 WhatsApp
               </a>
 
               <button
-                disabled={!worker.phone}
-                onClick={() => worker.phone && (window.location.href = `tel:${worker.phone}`)}
-                className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 px-6 py-4 rounded-2xl flex items-center justify-center gap-2 font-medium"
-              >
-                <FaComments />
-                Contact
-              </button>
+  disabled={!worker?.user?.phone}
+  onClick={() => setContact((prev) => !prev)}
+  className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 px-6 py-4 rounded-2xl flex items-center gap-3 font-medium"
+>
+  <FaPhone className="text-lg" />
+
+  <div className="flex flex-col items-start">
+    <span>Contact</span>
+
+    {contact && (
+      <span className="text-sm text-gray-200">
+        {worker.user.phone}
+      </span>
+    )}
+  </div>
+</button>
 
             </div>
 
