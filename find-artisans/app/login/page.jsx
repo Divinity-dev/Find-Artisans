@@ -108,6 +108,13 @@ Cookies.set('role', data.user.role, {
           );
         }
 
+        if (data?.user) {
+          localStorage.setItem(
+            'user',
+            JSON.stringify(data.user)
+          );
+        }
+
         const role = data?.user?.role || data?.role;
 
         if (role) {

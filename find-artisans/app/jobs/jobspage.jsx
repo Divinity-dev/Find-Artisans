@@ -14,7 +14,7 @@ import { toast } from 'react-toastify'
 
 const JobsPage = ({ jobs }) => {
 //   const [jobs, setJobs] = useState([]);
-  const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 //   const [loading, setLoading] = useState(true);
   const [deleteJobId, setDeleteJobId] = useState(null);
 const [isDeleting, setIsDeleting] = useState(false);
@@ -27,49 +27,29 @@ const [jobList, setJobList] = useState(jobs);
     setJobList(jobs);
   }, [jobs]);
 
-  
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
-//   useEffect(() => {
-//     fetchJobs();
-//   }, []);
+  const filteredJobs = jobList.filter((job) => {
+    if (!normalizedSearchTerm) {
+      return true;
+    }
 
- 
+    const searchableText = [
+      job.category,
+      job.title,
+      job.skill,
+      job.description,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
 
-//   const fetchJobs = async () => {
-//   try {
-//     const res = await API.get('/jobs');
-
-//     const jobsData = res?.data?.data; 
-
-//     setJobs(Array.isArray(jobsData) ? jobsData : []);
-    
-//   } catch (error) {
-//     console.error(error);
-//     setJobs([]);
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-
-  const filteredJobs =
-    filter === 'all'
-      ? jobList
-      : jobList.filter(
-          (job) =>
-            job.category?.toLowerCase() ===
-            filter.toLowerCase()
-        );
-
-  const categories = [
-    'all',
-    ...new Set(
-      jobList.map((job) => job.category).filter(Boolean)
-    ),
-  ];
+    return searchableText.includes(normalizedSearchTerm);
+  });
 
   useEffect(() => {
     setPage(1);
-  }, [ filter]);
+  }, [searchTerm]);
   
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -159,23 +139,28 @@ const applyToJob = async (jobId) => {
         </p>
       </div>
 
-      {/* FILTERS */}
+      {/* SEARCH */}
       <div className="px-6 md:px-20 py-6 flex flex-wrap gap-3 items-center">
         <Filter className="text-orange-500" />
 
-        {categories.map((category) => (
+        <div className="relative w-full md:max-w-xl">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search skill e.g. electrician"
+            className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white placeholder:text-gray-500 outline-none focus:border-orange-500"
+          />
+        </div>
+
+        {searchTerm && (
           <button
-            key={category}
-            onClick={() => setFilter(category)}
-            className={`px-4 py-2 rounded-lg border transition ${
-              filter === category
-                ? 'bg-orange-500 border-orange-500 text-white'
-                : 'border-gray-700 text-gray-300 hover:border-gray-500'
-            }`}
+            onClick={() => setSearchTerm('')}
+            className="px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:border-orange-500 hover:text-white transition"
           >
-            {category}
+            Clear
           </button>
-        ))}
+        )}
       </div>
 
       {/* JOBS */}

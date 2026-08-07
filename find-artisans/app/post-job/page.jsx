@@ -15,6 +15,15 @@ const [imagePreviews, setImagePreviews] = React.useState([]);
 
 const nigeriaStates = State.getStatesOfCountry('NG');
 
+const normalizeLgaStateName = (stateName) => {
+  const supportedNameMap = {
+    'Abuja Federal Capital Territory': 'Federal Capital Territory',
+    'Katsina': 'Kastina',
+  };
+
+  return supportedNameMap[stateName] || stateName;
+};
+
 const router = useRouter();
 
 const uploadToCloudinary = async (files) => {
@@ -191,8 +200,10 @@ setTimeout(() => {
     )
   : [];
 
+const lgaStateName = normalizeLgaStateName(values.state);
+
 const localGovernments = values.state
-  ? lgas(values.state)
+  ? lgas(lgaStateName) || []
   : [];
 
   return (
