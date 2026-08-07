@@ -231,14 +231,14 @@ const submitReview = async () => {
         <div className="flex gap-3">
           <Link
             href="/customer-edit"
-            className="bg-gray-900 px-4 py-2 rounded-xl"
+            className="bg-gray-900 px-4 py-2 flex items-center rounded-xl"
           >
             Edit Profile
           </Link>
 
           <Link
             href="/post-job"
-            className="bg-orange-500 px-4 py-2 rounded-xl"
+            className="bg-orange-500 flex items-center px-4 py-2 rounded-xl"
           >
             Post Job
           </Link>
