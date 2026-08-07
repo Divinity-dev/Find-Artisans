@@ -25,6 +25,12 @@ const AdminDashboard = () => {
   const [customers, setCustomers] = useState([])
   const [complaints, setComplaints] = useState([])
   const [jobs, setJobs] = useState([])
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    type: null,
+    id: null,
+    label: '',
+  })
   const [page, setPage] = useState({
     verifications: 1,
     workers: 1,
@@ -104,6 +110,60 @@ const AdminDashboard = () => {
   }
 
   // =========================
+  // DELETE RESOURCES
+  // =========================
+  const deleteResource = async (type, id) => {
+    const endpointMap = {
+      workers: `/admin/users/${id}`,
+      customers: `/admin/users/${id}`,
+      complaints: `/admin/complaints/${id}`,
+      jobs: `/admin/jobs/${id}`,
+    }
+
+    const labelMap = {
+      workers: 'Worker',
+      customers: 'Customer',
+      complaints: 'Complaint',
+      jobs: 'Job',
+    }
+
+    try {
+      await API.delete(endpointMap[type])
+
+      if (type === 'workers') {
+        setWorkers((prev) => prev.filter((item) => item._id !== id))
+      }
+
+      if (type === 'customers') {
+        setCustomers((prev) => prev.filter((item) => item._id !== id))
+      }
+
+      if (type === 'complaints') {
+        setComplaints((prev) => prev.filter((item) => item._id !== id))
+      }
+
+      if (type === 'jobs') {
+        setJobs((prev) => prev.filter((item) => item._id !== id))
+      }
+
+      toast.success(`${labelMap[type]} deleted`)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete resource')
+    } finally {
+      setDeleteModal({ isOpen: false, type: null, id: null, label: '' })
+    }
+  }
+
+  const openDeleteModal = (type, item) => {
+    setDeleteModal({
+      isOpen: true,
+      type,
+      id: item._id,
+      label: item.fullName || item.title || item.email || 'this resource',
+    })
+  }
+
+  // =========================
   // UI STATES
   // =========================
   if (loading)
@@ -121,7 +181,7 @@ const AdminDashboard = () => {
     )
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-200 p-6 md:p-10">
+    <div className="min-h-screen bg-gray-950 text-gray-200 p-6 md:p-10 overflow-x-hidden">
 
       <h1 className="text-3xl font-bold text-white mb-6">
         Admin Dashboard
@@ -129,12 +189,12 @@ const AdminDashboard = () => {
 
      
 {/* TABS */}
-<div className="w-full flex mb-8 gap-2 bg-gray-900 p-2 rounded-xl">
+<div className="w-full mb-8 grid grid-cols-2 gap-2 bg-gray-900 p-2 rounded-xl sm:flex sm:flex-wrap sm:items-center">
   {['stats','verifications','workers','customers','complaints','jobs'].map(tab => (
     <button
       key={tab}
       onClick={() => setActiveTab(tab)}
-      className={`flex-1 px-4 py-2 rounded-lg capitalize text-center transition ${
+      className={`w-full px-4 py-2 rounded-lg capitalize text-center transition sm:flex-1 ${
         activeTab === tab ? 'bg-orange-500 text-white' : 'bg-gray-800'
       }`}
     >
@@ -226,6 +286,7 @@ const AdminDashboard = () => {
               <div className="flex items-center gap-3">
                 <img
                   src={w.profilePhoto}
+                  alt={`Profile photo for ${w.fullName}`}
                   className="w-12 h-12 rounded-full"
                 />
                 <div>
@@ -244,6 +305,15 @@ const AdminDashboard = () => {
               <p className="text-sm mt-2">
                 Skills: {(w.skills || []).join(', ')}
               </p>
+
+              <div className="mt-4">
+                <button
+                  onClick={() => openDeleteModal('workers', w)}
+                  className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-semibold transition"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -262,6 +332,15 @@ const AdminDashboard = () => {
               <p className="text-sm mt-2">
                 {c.location?.city}, {c.location?.state}
               </p>
+
+              <div className="mt-4">
+                <button
+                  onClick={() => openDeleteModal('customers', c)}
+                  className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-semibold transition"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -299,6 +378,15 @@ const AdminDashboard = () => {
                   <option>rejected</option>
                 </select>
               </div>
+
+              <div className="mt-4">
+                <button
+                  onClick={() => openDeleteModal('complaints', c)}
+                  className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-semibold transition"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -326,8 +414,58 @@ const AdminDashboard = () => {
               <p className="text-sm mt-2">
                 Budget: ₦{j.budget}
               </p>
+
+              <div className="mt-4">
+                <button
+                  onClick={() => openDeleteModal('jobs', j)}
+                  className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-semibold transition"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ========================= DELETE CONFIRM MODAL ========================= */}
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-white">
+                  Confirm deletion
+                </h3>
+                <p className="mt-2 text-sm text-gray-400">
+                  Are you sure you want to delete <span className="text-white font-semibold">{deleteModal.label}</span>?
+                </p>
+              </div>
+              <button
+                onClick={() => setDeleteModal({ isOpen: false, type: null, id: null, label: '' })}
+                className="text-gray-400 hover:text-white text-2xl leading-none"
+                aria-label="Close delete modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setDeleteModal({ isOpen: false, type: null, id: null, label: '' })}
+                className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() => deleteResource(deleteModal.type, deleteModal.id)}
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold"
+              >
+                Yes, delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

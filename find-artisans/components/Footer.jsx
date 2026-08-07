@@ -1,7 +1,24 @@
+'use client';
+
 import Link from "next/link";
 import { MapPin, Phone, Mail } from "lucide-react";
+import { useSelector } from 'react-redux';
 
 const Footer = () => {
+
+  const authState = useSelector((state) => state.auth || {});
+  const { user, isAuthenticated } = authState;
+
+  const storedUser =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('user') || 'null')
+      : null;
+
+  const activeUser = user || storedUser;
+  console.log("name")
+
+  const isLoggedIn = Boolean(isAuthenticated || activeUser);
+
   return (
     <footer className="bg-gray-950 text-gray-300 border-t border-gray-800">
 
@@ -24,7 +41,7 @@ const Footer = () => {
           <h3 className="text-white font-semibold mb-4">Quick Links</h3>
 
           <div className="space-y-2 text-sm">
-            <Link href="/find-workers" className="hover:text-orange-500 transition">
+            <Link href="/workers" className="hover:text-orange-500 transition">
               Find Workers
             </Link>
 
@@ -47,17 +64,35 @@ const Footer = () => {
           <h3 className="text-white font-semibold mb-4">Support</h3>
 
           <div className="space-y-2 text-sm">
-            <Link href="/login" className="hover:text-orange-500 transition">
-              Login
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href={
+                    activeUser?.role === 'admin'
+                      ? '/admin'
+                      : activeUser?.role === 'worker'
+                      ? '/workers-dashboard'
+                      : '/customers-dashboard'
+                  }
+              className="hover:text-orange-500 transition">
+                My Profile
+              </Link>
+            ) : (
+              <div>
+              <Link href="/login" className="hover:text-orange-500 transition">
+                Login
+              </Link>
 
-            <Link href="/register" className="block hover:text-orange-500 transition">
+              <Link href="/register" className="block hover:text-orange-500 transition">
               Sign Up
             </Link>
+            </div>
+            )}
 
-            <Link href="/help" className="block hover:text-orange-500 transition">
+            
+
+            {/* <Link href="/help" className="block hover:text-orange-500 transition">
               Help Center
-            </Link>
+            </Link> */}
 
             <Link href="/privacy" className="block hover:text-orange-500 transition">
               Privacy Policy
@@ -73,7 +108,7 @@ const Footer = () => {
 
             <div className="flex items-center gap-2">
               <MapPin size={16} className="text-orange-500" />
-              Lagos, Nigeria
+              Benin city, Edo state, Nigeria
             </div>
 
             <div className="flex items-center gap-2">
