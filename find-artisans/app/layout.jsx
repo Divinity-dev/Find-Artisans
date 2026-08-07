@@ -34,6 +34,9 @@ export default function RootLayout({ children }) {
           <Footer />
           <ToastProvider />
         </Providers>
+         <GoogleAnalytics
+          gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}
+        />
       </body>
     </html>
   );
