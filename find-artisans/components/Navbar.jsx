@@ -199,7 +199,7 @@ const Navbar = () => {
               </button>
             </>
           ) : (
-            <>
+            <div className="flex flex-col md:flex-row gap-3">
               <Link
                 href="/login"
                 className="text-gray-300"
@@ -215,7 +215,7 @@ const Navbar = () => {
               >
                 Sign Up
               </Link>
-            </>
+            </div>
           )}
         </div>
       </div>
