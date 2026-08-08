@@ -265,7 +265,7 @@ const paginatedWorkers = filteredWorkers.slice(
                 </Link>
 
                 <a
-                  href={`https://wa.me/${w.phone?.replace(/\D/g, '')}`}
+                  href={`https://wa.me/${w.phone?.replace(/\D/g, '').replace(/^0/, "234")}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-2"
