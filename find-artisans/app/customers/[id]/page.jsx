@@ -78,13 +78,13 @@ export async function generateMetadata({ params }) {
     description: `View ${customer.fullName}'s public customer profile on FindArtisans.`,
 
     alternates: {
-      canonical: `https://findartisans.com/customers/${id}`,
+      canonical: `https://find-artisans.com/customers/${id}`,
     },
 
     openGraph: {
       title: `${customer.fullName} | FindArtisans`,
       description: `Public customer profile.`,
-      url: `https://findartisans.com/customers/${id}`,
+      url: `https://find-artisans.com/customers/${id}`,
       images: [
         {
           url:

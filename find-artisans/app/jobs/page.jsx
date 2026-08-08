@@ -37,14 +37,14 @@ export const metadata = {
     "Browse artisan jobs across Nigeria. Apply for electrician, plumbing, painting, cleaning, mechanic, carpentry and other skilled jobs.",
 
   alternates: {
-    canonical: "https://findartisans.com/jobs",
+    canonical: "https://find-artisans.com/jobs",
   },
 
   openGraph: {
     title: "Find Artisan Jobs in Nigeria | FindArtisans",
     description:
       "Browse verified jobs posted by customers across Nigeria.",
-    url: "https://findartisans.com/jobs",
+    url: "https://find-artisans.com/jobs",
     siteName: "FindArtisans",
     type: "website",
   },

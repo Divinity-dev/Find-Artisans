@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+   metadataBase: new URL("https://find-artisans.com"),
   title: "FindArtisans - Find Trusted Skilled Workers in Nigeria",
   description:
     "Find verified artisans, craftsmen, and skilled professionals across Nigeria or post jobs and hire trusted workers.",

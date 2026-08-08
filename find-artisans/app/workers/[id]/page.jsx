@@ -108,7 +108,7 @@ export async function generateMetadata({ params }) {
       `Hire ${worker.user.fullName}, a verified ${worker.user.skill} in ${worker.user.location?.city}, ${worker.user.location?.state}.`,
 
     alternates: {
-      canonical: `https://findartisans.com/workers/${id}`,
+      canonical: `https://find-artisans.com/workers/${id}`,
     },
 
     openGraph: {
@@ -116,7 +116,7 @@ export async function generateMetadata({ params }) {
       description:
         worker.about ||
         `Verified ${worker.user.skill} in ${worker.user.location?.state}.`,
-      url: `https://findartisans.com/workers/${id}`,
+      url: `https://find-artisans.com/workers/${id}`,
       images: [
         {
           url:

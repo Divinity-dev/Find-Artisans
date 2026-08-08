@@ -1,0 +1,17 @@
+export default function robots() {
+  return {
+    rules: {
+      userAgent: "*",
+      allow: "/",
+      disallow: [
+        "/dashboard/",
+        "/admin/",
+        "/login/",
+        "/signup/",
+        "/forgot-password/",
+        "/reset-password/",
+      ],
+    },
+    sitemap: "https://find-artisans.com/sitemap.xml",
+  };
+}
