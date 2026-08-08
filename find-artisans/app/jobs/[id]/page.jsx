@@ -60,13 +60,13 @@ export async function generateMetadata({ params }) {
       job.description.slice(0, 160),
 
     alternates: {
-      canonical: `https://findartisans.com/jobs/${id}`,
+      canonical: `https://find-artisans.com/jobs/${id}`,
     },
 
     openGraph: {
       title: job.title,
       description: job.description.slice(0, 160),
-      url: `https://findartisans.com/jobs/${id}`,
+      url: `https://find-artisans.com/jobs/${id}`,
       images: [
         {
           url:
