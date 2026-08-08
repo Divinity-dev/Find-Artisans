@@ -76,7 +76,11 @@ useEffect(() => {
       )
     : []
 
-  const localGovernments = selectedState ? lgas(selectedState) : []
+  const localGovernments = useMemo(() => {
+  if (!selectedState) return [];
+
+  return lgas(selectedState) || [];
+}, [selectedState]);
 
   // ======================
   // FILTER LOGIC
