@@ -51,7 +51,7 @@ export const metadata = {
     "painters",
     "FindArtisans",
   ],
-  alternates: {
-    canonical: "https://findartisans.com/workers",
-  },
+ alternates: {
+  canonical: "https://find-artisans.com/workers",
+},
 };

@@ -39,14 +39,14 @@ export const metadata = {
     "Find verified electricians, plumbers, mechanics, cleaners, and skilled professionals across Nigeria.",
 
   alternates: {
-    canonical: "https://findartisans.com",
+    canonical: "https://find-artisans.com",
   },
 
   openGraph: {
     title: "FindArtisans",
     description:
       "Hire trusted artisans across Nigeria.",
-    url: "https://findartisans.com",
+    url: "https://find-artisans.com",
     siteName: "FindArtisans",
     type: "website",
     images: [
