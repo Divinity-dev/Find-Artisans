@@ -309,6 +309,10 @@ dispatch(setUser(res.data.user))
   // =========================================
 const submitVerification = async () => {
   try {
+
+    const isValidNIN = (nin) => {
+  return /^\d{11}$/.test(nin)
+}
     if (!governmentId) {
       toast.error('Please upload your ID');
       return;
