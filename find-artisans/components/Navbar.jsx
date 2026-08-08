@@ -93,7 +93,13 @@ const Navbar = () => {
 
                 {/* PROFILE */}
                 <Link
-                  href="/profile"
+                   href={
+                    user.role === 'admin'
+                      ? '/admin'
+                      : user.role === 'worker'
+                      ? '/workers-dashboard'
+                      : '/customers-dashboard'
+                  }
                   className="flex items-center gap-2"
                 >
                   {user.profilePhoto ? (
@@ -171,7 +177,13 @@ const Navbar = () => {
           {isLoggedIn ? (
             <>
               <Link
-                href="/profile"
+                href={
+                  user.role === 'admin'
+                    ? '/admin'
+                    : user.role === 'worker'
+                    ? '/workers-dashboard'
+                    : '/customers-dashboard'
+                }
                 className="flex items-center gap-2 text-gray-300"
                 onClick={() => setIsOpen(false)}
               >
