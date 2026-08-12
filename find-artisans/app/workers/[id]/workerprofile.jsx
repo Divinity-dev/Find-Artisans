@@ -102,15 +102,12 @@ const Workerprofile = ({
     return job.status === selectedJobStatus
   })
 
-  console.log(worker)
-
   // Compute completed jobs for this worker by checking assigned worker id and job status
   const completedJobsCount = jobs.filter(j => {
     const assignedId = j.assignedWorker?._id || j.assignedWorker?.id
     return String(assignedId) === String(id) && j.status === 'completed'
   }).length
 
-  console.log(worker)
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-5 md:p-10">

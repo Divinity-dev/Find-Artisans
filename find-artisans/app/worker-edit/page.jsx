@@ -469,8 +469,6 @@ onChange={async (e) => {
     const imageUrl =
       await uploadImageToCloudinary(file)
 
-    console.log('CLOUDINARY URL:', imageUrl)
-
     if (!imageUrl) {
       throw new Error('No image URL returned')
     }

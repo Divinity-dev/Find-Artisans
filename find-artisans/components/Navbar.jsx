@@ -176,6 +176,20 @@ const Navbar = () => {
 
           {isLoggedIn ? (
             <>
+
+            <Link
+                  href={
+                    user.role === 'admin'
+                      ? '/admin'
+                      : user.role === 'worker'
+                      ? '/workers-dashboard'
+                      : '/customers-dashboard'
+                  }
+                  className="flex items-center gap-2 text-gray-300 hover:text-white"
+                >
+                  <LayoutDashboard size={18} />
+                  Dashboard
+                </Link>
               <Link
                 href={
                   user.role === 'admin'
