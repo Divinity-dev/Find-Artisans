@@ -43,6 +43,7 @@ const WorkerProfileEditPage = () => {
   const [skills, setSkills] = useState([])
 
     const [verifying, setVerifying] = useState(false);
+    
 
     const addPortfolioItem = async () => {
       try {
@@ -184,8 +185,6 @@ useEffect(() => {
   const timer = setTimeout(() => {
     const element = document.getElementById('verification')
 
-    console.log(element) // check if it exists
-
     element?.scrollIntoView({
       behavior: 'smooth',
       block: 'center',
@@ -194,7 +193,6 @@ useEffect(() => {
 
   return () => clearTimeout(timer)
 }, [searchParams])
-
 
 
   // =========================================

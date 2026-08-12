@@ -26,7 +26,7 @@ const Workerprofile = ({
 
 //   const [worker, setWorker] = useState(null)
 //   const [reviews, setReviews] = useState([])
-//   const [portfolio, setPortfolio] = useState([])
+  const [portfolio, setPortfolio] = useState([])
 //   const [ratingStats, setRatingStats] = useState(null)
 //   const [jobs, setJobs] = useState([])
   const [selectedJobStatus, setSelectedJobStatus] = useState('all')
@@ -102,11 +102,15 @@ const Workerprofile = ({
     return job.status === selectedJobStatus
   })
 
+  console.log(worker)
+
   // Compute completed jobs for this worker by checking assigned worker id and job status
   const completedJobsCount = jobs.filter(j => {
     const assignedId = j.assignedWorker?._id || j.assignedWorker?.id
     return String(assignedId) === String(id) && j.status === 'completed'
   }).length
+
+  console.log(worker)
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-5 md:p-10">
@@ -122,8 +126,8 @@ const Workerprofile = ({
           <div className="absolute -top-16 left-6 md:left-8">
             <div className="w-32 h-32 rounded-3xl bg-gray-900 p-2 border border-gray-700">
               <img
-                src={worker.profilePhoto || worker.user?.profilePhoto || '/images/cleaner.jpeg'}
-                alt={worker.fullName}
+                src={worker?.user?.profilePhoto || worker?.user?.profilePhoto || '/images/cleaner.jpeg'}
+                alt={worker?.user?.fullName}
                 className="w-full h-full object-cover rounded-2xl"
               />
             </div>
@@ -136,10 +140,10 @@ const Workerprofile = ({
 
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-3xl font-bold">
-                  {worker.fullName}
+                  {worker?.user?.fullName}
                 </h1>
 
-                {worker.verification?.isVerified && (
+                {worker?.user?.verification?.isVerified && (
                   <span className="bg-green-600 text-xs px-3 py-1 rounded-full flex items-center gap-1">
                     <FaCheckCircle /> Verified
                   </span>
@@ -147,14 +151,14 @@ const Workerprofile = ({
               </div>
 
               <p className="text-orange-400 text-lg mt-2">
-                {worker.skill}
+                {worker?.user?.skill}
               </p>
 
               <div className="flex flex-wrap gap-4 text-gray-400 mt-4">
 
                 <p className="flex items-center gap-2">
                   <FaMapMarkerAlt />
-                  {worker.location?.city}, {worker.location?.state}
+                  {worker?.user?.location?.city}, {worker?.user?.location?.state}
                 </p>
 
                 <p className="flex items-center gap-2">
@@ -164,15 +168,15 @@ const Workerprofile = ({
 
                 <p className="flex items-center gap-2 text-yellow-400">
                   <FaStar />
-                  {ratingStats?.avgRating?.toFixed(1) || worker.rating || 0}
-                  ({ratingStats?.totalReviews || worker.totalReviews || 0})
+                  {ratingStats?.user?.avgRating?.toFixed(1) || worker?.user?.rating || 0}
+                  ({ratingStats?.user?.totalReviews || worker?.totalReviews || 0})
                 </p>
 
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3">
                 <div className="bg-gray-800 px-4 py-2 rounded-xl text-sm">
-                  {worker.yearsOfExperience || 0} Years Experience
+                  {worker?.user?.yearsOfExperience || 0} Years Experience
                 </div>
               </div>
 
@@ -253,7 +257,7 @@ const Workerprofile = ({
             <h2 className="text-2xl font-bold mb-4">Skills</h2>
 
             <div className="flex flex-wrap gap-2">
-              {(worker.skills || []).map((s, i) => (
+              {(worker?.user?.skills || []).map((s, i) => (
                 <span
                   key={i}
                   className="bg-orange-600/20 text-orange-400 px-3 py-1 rounded-full text-sm"
@@ -271,23 +275,23 @@ const Workerprofile = ({
       {activeTab === 'portfolio' && (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-          {(worker.portfolio || []).length === 0 ? (
+          {(worker?.user?.portfolio || []).length === 0 ? (
             <p className="text-gray-400">No portfolio yet</p>
           ) : (
-            worker.portfolio.map((p, i) => (
+            worker?.user?.portfolio.map((p, i) => (
               <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
 
                 {p.image && (
                   <img
-                    src={p.image}
-                    alt={p.title}
+                    src={p?.image}
+                    alt={p?.title}
                     className="h-48 w-full object-cover"
                   />
                 )}
 
                 <div className="p-4">
-                  <h3 className="font-bold">{p.title}</h3>
-                  <p className="text-gray-400 text-sm">{p.location}</p>
+                  <h3 className="font-bold">{p?.title}</h3>
+                  <p className="text-gray-400 text-sm">{p?.location}</p>
                 </div>
 
               </div>
