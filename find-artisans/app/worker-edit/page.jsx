@@ -46,32 +46,49 @@ const WorkerProfileEditPage = () => {
     
 
     const addPortfolioItem = async () => {
-      try {
-        if (!portfolioForm.title || !portfolioForm.description) {
-          toast.error('Title and description required')
-          return
-        }
-
-        await API.post('/portfolio', {
-          title: portfolioForm.title,
-          location: portfolioForm.location,
-          image: portfolioForm.image,
-          description: portfolioForm.description,
-        })
-
-        setPortfolioForm({
-          title: '',
-          location: '',
-          image: '',
-          description: '',
-        })
-
-        toast.success('Portfolio item saved')
-      } catch (err) {
-        console.log(err)
-        toast.error('Failed to add portfolio')
-      }
+  try {
+    if (!portfolioForm.title.trim()) {
+      toast.error('Project title is required')
+      return
     }
+
+    if (!portfolioForm.description.trim()) {
+      toast.error('Project description is required')
+      return
+    }
+
+    if (!portfolioForm.image) {
+      toast.error('Please upload a project image')
+      return
+    }
+
+    const response = await API.post('/portfolio', {
+      title: portfolioForm.title.trim(),
+      location: portfolioForm.location.trim(),
+      image: portfolioForm.image,
+      description: portfolioForm.description.trim(),
+    })
+
+    console.log('Portfolio created:', response.data)
+
+    setPortfolioForm({
+      title: '',
+      location: '',
+      image: '',
+      description: '',
+    })
+
+    toast.success('Portfolio item saved successfully')
+  } catch (error) {
+    console.error('Add portfolio error:', error)
+    console.error('Backend response:', error.response?.data)
+
+    toast.error(
+      error.response?.data?.message ||
+      'Failed to add portfolio item'
+    )
+  }
+}
 const dispatch = useDispatch()
     // =========================================
 // CLOUDINARY IMAGE UPLOAD
@@ -398,19 +415,7 @@ const submitVerification = async () => {
           </p>
         </div>
 
-        <button
-          onClick={saveProfile}
-          disabled={saving}
-          className="bg-orange-500 hover:bg-orange-600 px-6 py-4 rounded-2xl font-medium transition flex items-center justify-center gap-3"
-        >
-          {saving && (
-            <FaSpinner className="animate-spin" />
-          )}
-
-          {saving
-            ? 'Saving...'
-            : 'Save Changes'}
-        </button>
+       
       </div>
 
       {/* =========================================
@@ -943,6 +948,27 @@ onChange={async (e) => {
         </div>
 
       </div>
+
+      {/* =========================================
+    SAVE CHANGES
+========================================= */}
+<div className="flex justify-end mb-8">
+
+  <button
+    type="button"
+    onClick={saveProfile}
+    disabled={saving}
+    className="bg-orange-500 hover:bg-orange-600 disabled:opacity-60 px-8 py-4 rounded-2xl font-medium transition flex items-center justify-center gap-3"
+  >
+    {saving && (
+      <FaSpinner className="animate-spin" />
+    )}
+
+    {saving ? 'Saving...' : 'Save Changes'}
+  </button>
+
+</div>
+
 
       {/* =========================================
           VERIFICATION

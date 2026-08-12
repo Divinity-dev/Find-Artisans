@@ -5,7 +5,7 @@ async function getWorkers(page = 1) {
     `${process.env.NEXT_PUBLIC_API_URL}/users/workers/all?page=${page}&limit=12`,
     {
       next: {
-        revalidate: 300,
+         cache: "no-store",
       },
     }
   );
