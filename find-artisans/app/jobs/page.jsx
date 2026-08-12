@@ -6,7 +6,7 @@ async function getJobs() {
       `${process.env.NEXT_PUBLIC_API_URL}/jobs`,
       {
         next: {
-          revalidate: 300,
+           cache: "no-store",
         },
       }
     );

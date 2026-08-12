@@ -266,7 +266,9 @@ const AdminDashboard = () => {
                 </button>
 
                 <button
-                  onClick={() => verifyWorker(v._id, 'reject')}
+                   onClick={() => {
+    setVerifications((prev) => prev.filter((w) => w._id !== v._id))
+  }}
                   className="bg-red-500 px-3 py-1 rounded"
                 >
                   <FaTimes />

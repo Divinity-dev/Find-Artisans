@@ -5,21 +5,21 @@ async function getWorker(id) {
     fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/users/${id}`,
       {
-        next: { revalidate: 300 },
+         cache: "no-store",
       }
     ),
 
     fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/reviews/worker/${id}`,
       {
-        next: { revalidate: 300 },
+         cache: "no-store",
       }
     ),
 
     fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/jobs/worker/public/${id}`,
       {
-        next: { revalidate: 300 },
+         cache: "no-store",
       }
     ),
   ]);
@@ -83,7 +83,7 @@ export async function generateMetadata({ params }) {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/users/${id}`,
     {
-      next: { revalidate: 300 },
+       cache: "no-store",
     }
   );
 

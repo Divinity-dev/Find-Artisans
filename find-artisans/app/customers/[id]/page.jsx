@@ -5,7 +5,7 @@ async function getCustomer(id) {
     `${process.env.NEXT_PUBLIC_API_URL}/users/${id}`,
     {
       next: {
-        revalidate: 300,
+         cache: "no-store",
       },
     }
   );
@@ -52,7 +52,7 @@ export async function generateMetadata({ params }) {
     `${process.env.NEXT_PUBLIC_API_URL}/users/${id}`,
     {
       next: {
-        revalidate: 300,
+         cache: "no-store",
       },
     }
   );
