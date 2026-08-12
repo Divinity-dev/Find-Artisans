@@ -5,7 +5,7 @@ async function getJob(id) {
     `${process.env.NEXT_PUBLIC_API_URL}/jobs/${id}`,
     {
       next: {
-        revalidate: 300,
+         cache: "no-store",
       },
     }
   );
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }) {
     `${process.env.NEXT_PUBLIC_API_URL}/jobs/${id}`,
     {
       next: {
-        revalidate: 300,
+         cache: "no-store",
       },
     }
   );

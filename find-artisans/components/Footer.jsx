@@ -15,7 +15,7 @@ const Footer = () => {
       : null;
 
   const activeUser = user || storedUser;
-  console.log("name")
+  
 
   const isLoggedIn = Boolean(isAuthenticated || activeUser);
 
