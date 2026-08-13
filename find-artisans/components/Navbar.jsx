@@ -185,6 +185,7 @@ const Navbar = () => {
                       ? '/workers-dashboard'
                       : '/customers-dashboard'
                   }
+                  onClick={() => setIsOpen(!isOpen)}
                   className="flex items-center gap-2 text-gray-300 hover:text-white"
                 >
                   <LayoutDashboard size={18} />

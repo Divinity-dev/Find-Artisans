@@ -246,7 +246,7 @@ const Workerprofile = ({
           <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-3xl p-6">
             <h2 className="text-2xl font-bold mb-4">About</h2>
             <p className="text-gray-400 leading-7">
-              {worker.bio || 'No bio available'}
+              {worker?.user?.about || 'No bio available'}
             </p>
           </div>
 
