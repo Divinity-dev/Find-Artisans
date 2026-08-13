@@ -79,7 +79,7 @@ const AdminDashboard = () => {
   }, [page])
 
   // =========================
-  // VERIFY / REJECT WORKER
+  // VERIFY WORKER
   // =========================
   const verifyWorker = async (id, action) => {
     try {
@@ -87,9 +87,39 @@ const AdminDashboard = () => {
         isVerified: action === 'approve',
       })
 
-      setVerifications((prev) => prev.filter((w) => w._id !== id))
+      setVerifications((prev) =>
+        prev.filter((w) => w._id !== id)
+      )
+
+      toast.success(
+        action === 'approve'
+          ? 'Worker verified successfully'
+          : 'Worker verification rejected'
+      )
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Action failed')
+      toast.error(
+        err.response?.data?.message || 'Action failed'
+      )
+    }
+  }
+
+  // =========================
+  // DELETE VERIFICATION REQUEST
+  // =========================
+  const deleteVerification = async (id) => {
+    try {
+      await API.delete(`/admin/verifications/${id}`)
+
+      setVerifications((prev) =>
+        prev.filter((w) => w._id !== id)
+      )
+
+      toast.success('Verification request rejected')
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+        'Failed to reject verification'
+      )
     }
   }
 
@@ -114,6 +144,7 @@ const AdminDashboard = () => {
   // =========================
   const deleteResource = async (type, id) => {
     const endpointMap = {
+      verifications: `/admin/verifications/${id}`,
       workers: `/admin/users/${id}`,
       customers: `/admin/users/${id}`,
       complaints: `/admin/complaints/${id}`,
@@ -121,6 +152,7 @@ const AdminDashboard = () => {
     }
 
     const labelMap = {
+      verifications: 'Verification request',
       workers: 'Worker',
       customers: 'Customer',
       complaints: 'Complaint',
@@ -129,6 +161,12 @@ const AdminDashboard = () => {
 
     try {
       await API.delete(endpointMap[type])
+
+      if (type === 'verifications') {
+        setVerifications((prev) =>
+          prev.filter((item) => item._id !== id)
+        )
+      }
 
       if (type === 'workers') {
         setWorkers((prev) => prev.filter((item) => item._id !== id))
@@ -148,19 +186,18 @@ const AdminDashboard = () => {
 
       toast.success(`${labelMap[type]} deleted`)
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete resource')
+      toast.error(
+        err.response?.data?.message ||
+        'Failed to delete resource'
+      )
     } finally {
-      setDeleteModal({ isOpen: false, type: null, id: null, label: '' })
+      setDeleteModal({
+        isOpen: false,
+        type: null,
+        id: null,
+        label: '',
+      })
     }
-  }
-
-  const openDeleteModal = (type, item) => {
-    setDeleteModal({
-      isOpen: true,
-      type,
-      id: item._id,
-      label: item.fullName || item.title || item.email || 'this resource',
-    })
   }
 
   // =========================
@@ -187,21 +224,20 @@ const AdminDashboard = () => {
         Admin Dashboard
       </h1>
 
-     
-{/* TABS */}
-<div className="w-full mb-8 grid grid-cols-2 gap-2 bg-gray-900 p-2 rounded-xl sm:flex sm:flex-wrap sm:items-center">
-  {['stats','verifications','workers','customers','complaints','jobs'].map(tab => (
-    <button
-      key={tab}
-      onClick={() => setActiveTab(tab)}
-      className={`w-full px-4 py-2 rounded-lg capitalize text-center transition sm:flex-1 ${
-        activeTab === tab ? 'bg-orange-500 text-white' : 'bg-gray-800'
-      }`}
-    >
-      {tab}
-    </button>
-  ))}
-</div>
+
+      {/* TABS */}
+      <div className="w-full mb-8 grid grid-cols-2 gap-2 bg-gray-900 p-2 rounded-xl sm:flex sm:flex-wrap sm:items-center">
+        {['stats', 'verifications', 'workers', 'customers', 'complaints', 'jobs'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`w-full px-4 py-2 rounded-lg capitalize text-center transition sm:flex-1 ${activeTab === tab ? 'bg-orange-500 text-white' : 'bg-gray-800'
+              }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
 
       {/* ========================= STATS ========================= */}
       {activeTab === 'stats' && (
@@ -237,7 +273,7 @@ const AdminDashboard = () => {
         <div className="space-y-4">
           {verifications.map(v => (
             <div key={v._id} className="bg-gray-900 p-5 rounded-xl">
-              
+
               <p className="text-lg font-bold">{v.fullName}</p>
               <p className="text-gray-400">{v.skill}</p>
 
@@ -266,10 +302,9 @@ const AdminDashboard = () => {
                 </button>
 
                 <button
-                   onClick={() => {
-    setVerifications((prev) => prev.filter((w) => w._id !== v._id))
-  }}
-                  className="bg-red-500 px-3 py-1 rounded"
+                  onClick={() => openDeleteModal('verifications', v)}
+                  className="bg-red-500 hover:bg-red-400 px-3 py-1 rounded transition"
+                  title="Reject verification"
                 >
                   <FaTimes />
                 </button>
@@ -440,8 +475,12 @@ const AdminDashboard = () => {
                   Confirm deletion
                 </h3>
                 <p className="mt-2 text-sm text-gray-400">
-                  Are you sure you want to delete <span className="text-white font-semibold">{deleteModal.label}</span>?
-                </p>
+  Are you sure you want to remove the{' '}
+  <span className="text-white font-semibold">
+    {deleteModal.label}
+  </span>
+  ? This action cannot be undone.
+</p>
               </div>
               <button
                 onClick={() => setDeleteModal({ isOpen: false, type: null, id: null, label: '' })}
@@ -464,7 +503,7 @@ const AdminDashboard = () => {
                 onClick={() => deleteResource(deleteModal.type, deleteModal.id)}
                 className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold"
               >
-                Yes, delete
+                Yes, continue
               </button>
             </div>
           </div>

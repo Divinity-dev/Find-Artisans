@@ -25,12 +25,15 @@ const WorkerProfileEditPage = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [portfolioForm, setPortfolioForm] = useState({
+ const [portfolioForm, setPortfolioForm] = useState({
   title: '',
   location: '',
   image: '',
   description: '',
 })
+
+const [portfolioItems, setPortfolioItems] = useState([])
+const [portfolioUploading, setPortfolioUploading] = useState(false)
 
   const [governmentId, setGovernmentId] =
     useState(null)
@@ -45,47 +48,65 @@ const WorkerProfileEditPage = () => {
     const [verifying, setVerifying] = useState(false);
     
 
-    const addPortfolioItem = async () => {
+   const addPortfolioItem = () => {
+  if (!portfolioForm.title.trim()) {
+    toast.error('Project title is required')
+    return
+  }
+
+  if (!portfolioForm.description.trim()) {
+    toast.error('Project description is required')
+    return
+  }
+
+  if (!portfolioForm.image) {
+    toast.error('Please upload a project image')
+    return
+  }
+
+  const newPortfolio = {
+    title: portfolioForm.title.trim(),
+    location: portfolioForm.location.trim(),
+    image: portfolioForm.image,
+    description: portfolioForm.description.trim(),
+  }
+
+  setPortfolioItems((prev) => [
+    ...prev,
+    newPortfolio,
+  ])
+
+  setPortfolioForm({
+    title: '',
+    location: '',
+    image: '',
+    description: '',
+  })
+
+  toast.success('Portfolio item added')
+}
+
+const removePortfolioItem = async (index) => {
+  const portfolio = portfolioItems[index]
+
   try {
-    if (!portfolioForm.title.trim()) {
-      toast.error('Project title is required')
-      return
+    // Existing portfolio item
+    if (portfolio._id) {
+      await API.delete(`/portfolio/${portfolio._id}`)
     }
 
-    if (!portfolioForm.description.trim()) {
-      toast.error('Project description is required')
-      return
-    }
+    // Remove from frontend state
+    setPortfolioItems((prev) =>
+      prev.filter((_, i) => i !== index)
+    )
 
-    if (!portfolioForm.image) {
-      toast.error('Please upload a project image')
-      return
-    }
-
-    const response = await API.post('/portfolio', {
-      title: portfolioForm.title.trim(),
-      location: portfolioForm.location.trim(),
-      image: portfolioForm.image,
-      description: portfolioForm.description.trim(),
-    })
-
-    console.log('Portfolio created:', response.data)
-
-    setPortfolioForm({
-      title: '',
-      location: '',
-      image: '',
-      description: '',
-    })
-
-    toast.success('Portfolio item saved successfully')
+    toast.success('Portfolio item removed')
   } catch (error) {
-    console.error('Add portfolio error:', error)
-    console.error('Backend response:', error.response?.data)
+    console.error('Remove portfolio error:', error)
 
     toast.error(
-      error.response?.data?.message ||
-      'Failed to add portfolio item'
+      error?.response?.data?.message ||
+      'Failed to remove portfolio item'
     )
   }
 }
@@ -187,6 +208,7 @@ const uploadImageToCloudinary = async (file) => {
       }))
 
       setSkills(user?.skills ?? [])
+      setPortfolioItems(user?.portfolio ?? [])
     } catch (error) {
       setError('Failed to load profile')
     }
@@ -303,11 +325,12 @@ useEffect(() => {
   specialization: formData.specialization,
   availability: formData.availability,
   location: formData.location,
+portfolio: portfolioItems,
 }
       const res = await API.patch('/users/me', payload)
 
 dispatch(setUser(res.data.user))
-      dispatch(setUser(res.data.user))
+      
       toast.success(
         'Profile updated successfully'
       )
@@ -809,82 +832,209 @@ onChange={async (e) => {
       {/* =========================================
           PORTFOLIO
       ========================================= */}
-      <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 mb-8">
+<div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 mb-8">
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+  <div className="mb-6">
+    <h2 className="text-2xl font-bold">
+      Portfolio
+    </h2>
 
-          <div>
-            <h2 className="text-2xl font-bold">
-              Portfolio
-            </h2>
+    <p className="text-gray-400 mt-1">
+      Showcase your previous work to attract more customers
+    </p>
+  </div>
 
-            <p className="text-gray-400 mt-1">
-              Your uploaded projects
-            </p>
-          </div>
+  {/* EXISTING / ADDED PORTFOLIOS */}
+  {portfolioItems.length > 0 && (
+    <div className="grid md:grid-cols-2 gap-5 mb-8">
 
-        </div>
+      {portfolioItems.map((item, index) => (
+        <div
+          key={index}
+          className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden"
+        >
 
-        {/* PORTFOLIO INPUT FORM */}
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 mb-6">
-          <h3 className="text-xl font-bold mb-4">Add Portfolio Item</h3>
-
-          <div className="grid gap-4">
-            <input
-              placeholder="Project Title"
-              value={portfolioForm.title}
-              onChange={(e) =>
-                setPortfolioForm({ ...portfolioForm, title: e.target.value })
-              }
-              className="w-full bg-gray-800 border border-gray-700 focus:border-orange-500 p-4 rounded-2xl outline-none"
+          {/* IMAGE */}
+          {item.image && (
+            <img
+              src={item.image}
+              alt={item.title}
+              className="w-full h-48 object-cover"
             />
+          )}
 
-            <input
-              placeholder="Location"
-              value={portfolioForm.location}
-              onChange={(e) =>
-                setPortfolioForm({ ...portfolioForm, location: e.target.value })
-              }
-              className="w-full bg-gray-800 border border-gray-700 focus:border-orange-500 p-4 rounded-2xl outline-none"
-            />
+          {/* CONTENT */}
+          <div className="p-5">
 
-            <textarea
-              placeholder="Description"
-              value={portfolioForm.description}
-              onChange={(e) =>
-                setPortfolioForm({ ...portfolioForm, description: e.target.value })
-              }
-              className="w-full bg-gray-800 border border-gray-700 focus:border-orange-500 p-4 rounded-2xl outline-none resize-none"
-              rows={4}
-            />
+            <div className="flex items-start justify-between gap-4">
 
-            <div className="flex items-center gap-3">
-              <input
-                type="file"
-                onChange={async (e) => {
-                  const file = e.target.files[0]
-                  if (!file) return
+              <div>
+                <h3 className="text-lg font-bold">
+                  {item.title}
+                </h3>
 
-                  const url = await uploadImageToCloudinary(file)
-
-                  setPortfolioForm((prev) => ({
-                    ...prev,
-                    image: url,
-                  }))
-                }}
-                className="w-full bg-gray-800 border border-gray-700 p-3 rounded-2xl"
-              />
+                {item.location && (
+                  <p className="text-sm text-gray-400 mt-1">
+                    {item.location}
+                  </p>
+                )}
+              </div>
 
               <button
-                onClick={addPortfolioItem}
-                className="bg-orange-500 hover:bg-orange-600 px-6 py-4 rounded-2xl font-medium"
+                type="button"
+                onClick={() =>
+                  removePortfolioItem(index)
+                }
+                className="text-red-400 hover:text-red-500 transition p-2"
+                title="Remove portfolio"
               >
-                Add
+                <FaTrash />
               </button>
+
             </div>
+
+            <p className="text-gray-400 text-sm mt-4 leading-relaxed">
+              {item.description}
+            </p>
+
           </div>
+
         </div>
+      ))}
+
+    </div>
+  )}
+
+  {/* ADD PORTFOLIO FORM */}
+  <div className="bg-gray-950 border border-gray-800 rounded-3xl p-6">
+
+    <h3 className="text-xl font-bold mb-5">
+      Add Portfolio Item
+    </h3>
+
+    <div className="grid gap-4">
+
+      {/* TITLE */}
+      <input
+        type="text"
+        placeholder="Project Title"
+        value={portfolioForm.title}
+        onChange={(e) =>
+          setPortfolioForm((prev) => ({
+            ...prev,
+            title: e.target.value,
+          }))
+        }
+        className="w-full bg-gray-800 border border-gray-700 focus:border-orange-500 p-4 rounded-2xl outline-none"
+      />
+
+      {/* LOCATION */}
+      <input
+        type="text"
+        placeholder="Location"
+        value={portfolioForm.location}
+        onChange={(e) =>
+          setPortfolioForm((prev) => ({
+            ...prev,
+            location: e.target.value,
+          }))
+        }
+        className="w-full bg-gray-800 border border-gray-700 focus:border-orange-500 p-4 rounded-2xl outline-none"
+      />
+
+      {/* DESCRIPTION */}
+      <textarea
+        placeholder="Describe the project and the work you did..."
+        value={portfolioForm.description}
+        onChange={(e) =>
+          setPortfolioForm((prev) => ({
+            ...prev,
+            description: e.target.value,
+          }))
+        }
+        rows={4}
+        className="w-full bg-gray-800 border border-gray-700 focus:border-orange-500 p-4 rounded-2xl outline-none resize-none"
+      />
+
+      {/* IMAGE */}
+      <div>
+        <label className="block mb-2 text-sm text-gray-400">
+          Project Image
+        </label>
+
+        <input
+          type="file"
+          accept="image/*"
+          disabled={portfolioUploading}
+          onChange={async (e) => {
+            const file = e.target.files?.[0]
+
+            if (!file) return
+
+            try {
+              setPortfolioUploading(true)
+
+              const url =
+                await uploadImageToCloudinary(file)
+
+              setPortfolioForm((prev) => ({
+                ...prev,
+                image: url,
+              }))
+
+              toast.success(
+                'Project image uploaded'
+              )
+            } catch (error) {
+              console.error(error)
+
+              toast.error(
+                'Failed to upload project image'
+              )
+            } finally {
+              setPortfolioUploading(false)
+            }
+          }}
+          className="w-full bg-gray-800 border border-gray-700 p-3 rounded-2xl"
+        />
+
+        {portfolioForm.image && (
+          <div className="mt-4">
+            <img
+              src={portfolioForm.image}
+              alt="Portfolio preview"
+              className="w-full max-h-56 object-cover rounded-2xl border border-gray-700"
+            />
+          </div>
+        )}
       </div>
+
+      {/* ADD BUTTON */}
+      <button
+        type="button"
+        onClick={addPortfolioItem}
+        disabled={portfolioUploading}
+        className="bg-orange-500 hover:bg-orange-600 disabled:opacity-60 px-6 py-4 rounded-2xl font-medium flex items-center justify-center gap-2 transition"
+      >
+        <FaPlus />
+
+        {portfolioUploading
+          ? 'Uploading Image...'
+          : 'Add Portfolio'}
+      </button>
+
+    </div>
+
+  </div>
+
+  {/* EMPTY STATE */}
+  {portfolioItems.length === 0 && (
+    <p className="text-gray-500 text-center mt-5">
+      No portfolio items added yet.
+    </p>
+  )}
+
+</div>
 
       {/* =========================================
           AVAILABILITY
