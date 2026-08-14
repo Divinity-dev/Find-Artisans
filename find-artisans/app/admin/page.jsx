@@ -31,12 +31,32 @@ const AdminDashboard = () => {
     id: null,
     label: '',
   })
+
+  const openDeleteModal = (type, item) => {
+  setDeleteModal({
+    isOpen: true,
+    type,
+    id: item._id,
+    label:
+      type === 'verifications'
+        ? 'Verification request'
+        : type === 'workers'
+        ? 'Worker'
+        : type === 'customers'
+        ? 'Customer'
+        : type === 'complaints'
+        ? 'Complaint'
+        : 'Job',
+  })
+}
+
   const [page, setPage] = useState({
     verifications: 1,
     workers: 1,
     customers: 1,
     complaints: 1,
   })
+  
 
   // =========================
   // FETCH DATA
