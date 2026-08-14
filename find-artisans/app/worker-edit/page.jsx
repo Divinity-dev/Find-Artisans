@@ -48,7 +48,7 @@ const [portfolioUploading, setPortfolioUploading] = useState(false)
     const [verifying, setVerifying] = useState(false);
     
 
-   const addPortfolioItem = () => {
+  const addPortfolioItem = async () => {
   if (!portfolioForm.title.trim()) {
     toast.error('Project title is required')
     return
@@ -71,19 +71,47 @@ const [portfolioUploading, setPortfolioUploading] = useState(false)
     description: portfolioForm.description.trim(),
   }
 
-  setPortfolioItems((prev) => [
-    ...prev,
-    newPortfolio,
-  ])
+  try {
+    setPortfolioUploading(true)
 
-  setPortfolioForm({
-    title: '',
-    location: '',
-    image: '',
-    description: '',
-  })
+    // Build the updated portfolio list
+    const updatedPortfolio = [
+      ...portfolioItems,
+      newPortfolio,
+    ]
 
-  toast.success('Portfolio item added')
+    // Save portfolio directly to the backend
+    const response = await API.post('/portfolio', newPortfolio)
+
+    // Update Redux user if returned by backend
+    if (response?.data?.user) {
+      dispatch(setUser(response.data.user))
+    }
+
+    // Update frontend state only after successful API save
+    setPortfolioItems(
+      response?.data?.user?.portfolio || updatedPortfolio
+    )
+
+    // Clear form
+    setPortfolioForm({
+      title: '',
+      location: '',
+      image: '',
+      description: '',
+    })
+
+    toast.success('Portfolio item added successfully')
+  } catch (error) {
+    console.error('Add portfolio error:', error)
+
+    toast.error(
+      error?.response?.data?.message ||
+        'Failed to save portfolio item'
+    )
+  } finally {
+    setPortfolioUploading(false)
+  }
 }
 
 const removePortfolioItem = async (index) => {
