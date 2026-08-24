@@ -34,6 +34,11 @@ const WorkerProfileEditPage = () => {
 
 const [portfolioItems, setPortfolioItems] = useState([])
 const [portfolioUploading, setPortfolioUploading] = useState(false)
+const [gettingLocation, setGettingLocation] = useState(false)
+const [currentCoordinates, setCurrentCoordinates] = useState({
+  latitude: null,
+  longitude: null,
+})
 
   const [governmentId, setGovernmentId] =
     useState(null)
@@ -330,45 +335,160 @@ useEffect(() => {
   }
 
   // =========================================
-  // SAVE PROFILE
-  // =========================================
-  const saveProfile = async () => {
-    try {
-      setSaving(true)
-
-      const payload = {
-  fullName: formData.fullName,
-  email: formData.email,
-  phone: formData.phone,
-   profilePhoto:
-  formData.profilePhoto &&
-  !formData.profilePhoto.startsWith('blob:')
-    ? formData.profilePhoto
-    : '',
-  about: formData.bio,
-  skill: formData.skill,
-  skills,
-  hourlyRate: formData.hourlyRate,
-  yearsOfExperience: formData.yearsOfExperience,
-  specialization: formData.specialization,
-  availability: formData.availability,
-  location: formData.location,
-portfolio: portfolioItems,
-}
-      const res = await API.patch('/users/me', payload)
-
-dispatch(setUser(res.data.user))
-      
-      toast.success(
-        'Profile updated successfully'
+// GET CURRENT GPS LOCATION
+// =========================================
+const getCurrentLocation = () => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(
+        new Error(
+          'Geolocation is not supported by this browser'
+        )
       )
-    } catch (error) {
-      console.log(error)
-      toast.error('Failed to save profile')
-    } finally {
-      setSaving(false)
+      return
     }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = position.coords.latitude
+        const longitude = position.coords.longitude
+
+        setCurrentCoordinates({
+          latitude,
+          longitude,
+        })
+
+        resolve({
+          latitude,
+          longitude,
+        })
+      },
+      (error) => {
+        let message = 'Unable to get your location'
+
+        if (error.code === error.PERMISSION_DENIED) {
+          message =
+            'Location permission was denied. Please allow location access.'
+        }
+
+        if (error.code === error.POSITION_UNAVAILABLE) {
+          message =
+            'Your current location could not be determined.'
+        }
+
+        if (error.code === error.TIMEOUT) {
+          message =
+            'Location request timed out. Please try again.'
+        }
+
+        reject(new Error(message))
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      }
+    )
+  })
+}
+
+  // =========================================
+// SAVE PROFILE
+// =========================================
+const saveProfile = async () => {
+  try {
+    setSaving(true)
+
+    let coordinates = currentCoordinates
+
+    // Get the worker's current GPS location
+    try {
+      setGettingLocation(true)
+
+      coordinates = await getCurrentLocation()
+    } catch (locationError) {
+      console.warn(
+        'Could not get worker GPS location:',
+        locationError
+      )
+
+      toast.warning(
+        'Profile will be saved, but your exact location could not be obtained.'
+      )
+    } finally {
+      setGettingLocation(false)
+    }
+
+    const payload = {
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+
+      profilePhoto:
+        formData.profilePhoto &&
+        !formData.profilePhoto.startsWith('blob:')
+          ? formData.profilePhoto
+          : '',
+
+      about: formData.bio,
+
+      skill: formData.skill,
+
+      skills,
+
+      hourlyRate: formData.hourlyRate,
+
+      yearsOfExperience:
+        formData.yearsOfExperience,
+
+      specialization:
+        formData.specialization,
+
+      availability:
+        formData.availability,
+
+      location: {
+  state: formData.location.state,
+  city: formData.location.city,
+  localGovernment: formData.location.localGovernment,
+  address: formData.location.address,
+
+  ...(coordinates.latitude !== null &&
+    coordinates.longitude !== null && {
+      coordinates: {
+        type: 'Point',
+        coordinates: [
+          coordinates.longitude,
+          coordinates.latitude,
+        ],
+      },
+    }),
+},
+
+      portfolio: portfolioItems,
+    }
+
+    const res = await API.patch(
+      '/users/me',
+      payload
+    )
+
+    dispatch(setUser(res.data.user))
+
+    toast.success(
+      'Profile and location updated successfully'
+    )
+  } catch (error) {
+    console.log(error)
+
+    toast.error(
+      error?.response?.data?.message ||
+        'Failed to save profile'
+    )
+  } finally {
+    setSaving(false)
   }
+}
 
   // =========================================
   // SUBMIT VERIFICATION
@@ -448,12 +568,12 @@ const submitVerification = async () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-5 md:p-10">
+    <div className="min-h-screen bg-gray-950 text-white px-3 py-5 sm:px-5 md:p-10 overflow-x-hidden">
 
       {/* =========================================
           HEADER
       ========================================= */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 mb-10">
+     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-5 mb-6 sm:mb-10">
 
         <div>
           <h1 className="text-3xl md:text-4xl font-bold">
@@ -608,95 +728,182 @@ onChange={async (e) => {
           <div className="relative">
   <FaMapMarkerAlt className="absolute top-5 left-4 text-gray-500" />
 
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-10">
+  <div className="pl-10">
 
-    {/* STATE */}
-    <select
-      value={formData.location.state}
-      onChange={(e) => {
-        setFormData((prev) => ({
-          ...prev,
-          location: {
-            state: e.target.value,
-            city: '',
-            localGovernment: '',
-            address: prev.location.address,
-          },
-        }))
-      }}
-      className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl"
-    >
-      <option value="">Select State</option>
+    {/* USE CURRENT LOCATION */}
+    {/* LOCATION DETECTION */}
+{/* LOCATION DETECTION */}
+<div className="mb-5 bg-gray-800/60 border border-gray-700 rounded-2xl p-3 sm:p-4">
 
-      {State.getStatesOfCountry('NG').map((state) => (
-        <option key={state.isoCode} value={state.name}>
-          {state.name}
-        </option>
-      ))}
-    </select>
+  <div className="flex items-start gap-3">
 
-    {/* CITY */}
-    <select
-      value={formData.location.city}
-      onChange={(e) => {
-        setFormData((prev) => ({
-          ...prev,
-          location: {
-            ...prev.location,
-            city: e.target.value,
-            localGovernment: '',
-          },
-        }))
-      }}
-      disabled={!formData.location.state}
-      className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl"
-    >
-      <option value="">Select City</option>
+    <div className="mt-1 flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center">
+      <FaMapMarkerAlt />
+    </div>
 
-      {City.getCitiesOfState(
-        'NG',
-        State.getStatesOfCountry('NG').find(
-          (s) => s.name === formData.location.state
-        )?.isoCode
-      ).map((city) => (
-        <option key={city.name} value={city.name}>
-          {city.name}
-        </option>
-      ))}
-    </select>
+    <div className="min-w-0 flex-1">
 
-    {/* LOCAL GOVERNMENT */}
-    <select
-      value={formData.location.localGovernment}
-      onChange={(e) =>
-        setFormData((prev) => ({
-          ...prev,
-          location: {
-            ...prev.location,
-            localGovernment: e.target.value,
-          },
-        }))
+      <h3 className="font-semibold text-white text-sm sm:text-base">
+        Set your exact location
+      </h3>
+
+      <p className="text-xs sm:text-sm text-gray-400 mt-1 leading-relaxed">
+        Allow FindArtisans to detect your current location
+        so customers can find you when searching for artisans
+        near them.
+      </p>
+
+      <p className="text-[11px] sm:text-xs text-gray-500 mt-2 leading-relaxed">
+        Your location helps us calculate your distance from
+        customers and improve nearby search results.
+      </p>
+
+    </div>
+
+  </div>
+
+  <button
+    type="button"
+    onClick={async () => {
+      try {
+        setGettingLocation(true)
+
+        const coordinates =
+          await getCurrentLocation()
+
+        toast.success(
+          'Your current location has been detected'
+        )
+
+        console.log(
+          'Worker coordinates:',
+          coordinates
+        )
+      } catch (error) {
+        toast.error(error.message)
+      } finally {
+        setGettingLocation(false)
       }
-      disabled={!formData.location.state}
-      className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl"
-    >
-      <option value="">Select Local Government</option>
-      {localGovernments.map((lga) => (
-        <option key={lga} value={lga}>
-          {lga}
-        </option>
-      ))}
-    </select>
+    }}
+    disabled={gettingLocation}
+    className="w-full mt-4 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 sm:px-5 py-3.5 sm:py-3 rounded-2xl flex items-center justify-center gap-2 transition font-medium text-sm sm:text-base"
+  >
+    <FaMapMarkerAlt className="flex-shrink-0" />
 
-    {/* ADDRESS */}
-    <input
-      type="text"
-      value={formData.location.address}
-      onChange={handleChange}
-      name="location.address"
-      placeholder="Full Address"
-      className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl"
-    />
+    <span className="truncate">
+      {gettingLocation
+        ? 'Detecting your location...'
+        : 'Use my current location'}
+    </span>
+  </button>
+
+</div>
+
+    {/* LOCATION FIELDS */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+      {/* STATE */}
+      <select
+        value={formData.location.state}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            location: {
+              state: e.target.value,
+              city: '',
+              localGovernment: '',
+              address: prev.location.address,
+            },
+          }))
+        }}
+        className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl"
+      >
+        <option value="">Select State</option>
+
+        {State.getStatesOfCountry('NG').map((state) => (
+          <option
+            key={state.isoCode}
+            value={state.name}
+          >
+            {state.name}
+          </option>
+        ))}
+      </select>
+
+      {/* CITY */}
+      <select
+        value={formData.location.city}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            location: {
+              ...prev.location,
+              city: e.target.value,
+              localGovernment: '',
+            },
+          }))
+        }}
+        disabled={!formData.location.state}
+        className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl"
+      >
+        <option value="">Select City</option>
+
+        {City.getCitiesOfState(
+          'NG',
+          State.getStatesOfCountry('NG').find(
+            (s) =>
+              s.name === formData.location.state
+          )?.isoCode
+        ).map((city) => (
+          <option
+            key={city.name}
+            value={city.name}
+          >
+            {city.name}
+          </option>
+        ))}
+      </select>
+
+      {/* LOCAL GOVERNMENT */}
+      <select
+        value={formData.location.localGovernment}
+        onChange={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            location: {
+              ...prev.location,
+              localGovernment: e.target.value,
+            },
+          }))
+        }
+        disabled={!formData.location.state}
+        className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl"
+      >
+        <option value="">
+          Select Local Government
+        </option>
+
+        {localGovernments.map((lga) => (
+          <option
+            key={lga}
+            value={lga}
+          >
+            {lga}
+          </option>
+        ))}
+      </select>
+
+      {/* ADDRESS */}
+      <input
+        type="text"
+        value={formData.location.address}
+        onChange={handleChange}
+        name="location.address"
+        placeholder="Full Address"
+        className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl"
+      />
+
+    </div>
   </div>
 </div>
 
