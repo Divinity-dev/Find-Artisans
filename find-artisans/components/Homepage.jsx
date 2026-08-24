@@ -1,12 +1,16 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 import { State, City } from 'country-state-city';
 import { lgas } from 'nigerian-states-and-lgas';
-import Link from 'next/link';
-import { motion, AnimatePresence } from "framer-motion";
+
+import { motion, AnimatePresence } from 'framer-motion';
+
+import useGeolocation from '../hooks/useGeolocation';
+import WorkerCard from '../components/WorkerCard'
 
 import {
   FaStar,
@@ -16,449 +20,2045 @@ import {
   FaQuoteLeft,
   FaBolt,
   FaUserCheck,
-  FaPlayCircle,
+  FaTimes,
+  FaMapMarkerAlt,
+  FaUndo,
+  FaShieldAlt,
+  FaArrowRight,
+  FaCompass,
+  FaLocationArrow,
+  FaUserTie,
+  FaPhoneAlt,
+  FaChevronRight,
+  FaHammer,
+  FaWrench,
+  FaPaintRoller,
+  FaBroom,
+  FaCar,
 } from 'react-icons/fa';
+
+
+// ============================================================
+// TESTIMONIALS
+// ============================================================
 
 const testimonials = [
   {
     id: 1,
-    type: "Customer",
-    name: "Chinedu O.",
-    location: "Lagos",
-    image: "/images/worker3.jpeg",
+    type: 'Customer',
+    name: 'Chinedu O.',
+    location: 'Lagos',
+    image: '/images/worker3.jpeg',
     message:
-      "I found a verified plumber within 15 minutes. The service was excellent and affordable.",
+      'I found a verified plumber within 15 minutes. The service was excellent and affordable.',
     rating: 5,
   },
   {
     id: 2,
-    type: "Worker",
-    name: "Aisha M.",
-    location: "Abuja",
-    image: "/images/worker1.jpeg",
+    type: 'Worker',
+    name: 'Aisha M.',
+    location: 'Abuja',
+    image: '/images/worker1.jpeg',
     message:
       "Since joining FindArtisans, I've gained more customers than ever before.",
     rating: 5,
   },
   {
     id: 3,
-    type: "Customer",
-    name: "David E.",
-    location: "Port Harcourt",
-    image: "/images/worker2.jpeg",
+    type: 'Customer',
+    name: 'David E.',
+    location: 'Port Harcourt',
+    image: '/images/worker2.jpeg',
     message:
-      "The ratings and verification gave me confidence. My electrician did a fantastic job.",
+      'The ratings and verification gave me confidence. My electrician did a fantastic job.',
     rating: 5,
   },
   {
     id: 4,
-    type: "Worker",
-    name: "Blessing K.",
-    location: "Benin",
-    image: "/images/electrician.jpeg",
+    type: 'Worker',
+    name: 'Blessing K.',
+    location: 'Benin',
+    image: '/images/electrician.jpeg',
     message:
-      "FindArtisans has helped me grow my business and reach more clients.",
+      'FindArtisans has helped me grow my business and reach more clients.',
     rating: 5,
   },
 ];
 
+
+// ============================================================
+// CATEGORIES
+// ============================================================
+
+const categories = [
+  {
+    title: 'Electricians',
+    icon: <FaBolt />,
+    description:
+      'Electrical installations, repairs and maintenance.',
+  },
+  {
+    title: 'Plumbers',
+    icon: <FaWrench />,
+    description:
+      'Reliable plumbing installation and repairs.',
+  },
+  {
+    title: 'Carpenters',
+    icon: <FaHammer />,
+    description:
+      'Furniture, woodwork and custom carpentry.',
+  },
+  {
+    title: 'Painters',
+    icon: <FaPaintRoller />,
+    description:
+      'Interior, exterior and decorative painting.',
+  },
+  {
+    title: 'Cleaners',
+    icon: <FaBroom />,
+    description:
+      'Professional home and office cleaning services.',
+  },
+  {
+    title: 'Mechanics',
+    icon: <FaCar />,
+    description:
+      'Vehicle repairs, servicing and diagnostics.',
+  },
+];
+
+
+// ============================================================
+// HOMEPAGE
+// ============================================================
+
 const Homepage = ({ workers = [] }) => {
-//   const [workers, setWorkers] = useState([]);
-//   const [loading, setLoading] = useState(true);
 
-  // filters
+  // ==========================================================
+  // GEOLOCATION
+  // ==========================================================
+
+  const {
+    location,
+    loading: locationLoading,
+    error: locationError,
+    getLocation,
+  } = useGeolocation();
+
+  const [nearbyWorkers, setNearbyWorkers] = useState([]);
+
+  const [locationSearch, setLocationSearch] =
+    useState(false);
+
+  const [locationSearchLoading, setLocationSearchLoading] =
+    useState(false);
+
+  const [locationSearchSkill, setLocationSearchSkill] =
+    useState('');
+
+
+  // ==========================================================
+  // FILTERS
+  // ==========================================================
+
   const [searchName, setSearchName] = useState('');
-  const [selectedState, setSelectedState] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
-  const [selectedLGA, setSelectedLGA] = useState('');
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
-  // ======================
-  // FETCH WORKERS
-  // ======================
-//   useEffect(() => {
-//     const fetchWorkers = async () => {
-//       try {
-//         setLoading(true);
-//         const res = await API.get('/users/workers/all');
-//         setWorkers(res.data.workers || []);
-//       } catch (err) {
-//         console.error(err);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
+  const [selectedState, setSelectedState] =
+    useState('');
 
-//     fetchWorkers();
-//   }, []);
+  const [selectedCity, setSelectedCity] =
+    useState('');
 
-  const nigeriaStates = State.getStatesOfCountry('NG');
+  const [selectedLGA, setSelectedLGA] =
+    useState('');
+
+  const [selectedRadius, setSelectedRadius] =
+    useState(5);
+
+
+  // ==========================================================
+  // TESTIMONIAL STATE
+  // ==========================================================
+
+  const [currentTestimonial, setCurrentTestimonial] =
+    useState(0);
+
+
+  // ==========================================================
+  // DISTANCE OPTIONS
+  // ==========================================================
+
+  const distanceOptions = [1, 3, 5, 10];
+
+
+  // ==========================================================
+  // NIGERIA LOCATION DATA
+  // ==========================================================
+
+  const nigeriaStates =
+    State.getStatesOfCountry('NG');
+
 
   const cities = selectedState
     ? City.getCitiesOfState(
         'NG',
-        nigeriaStates.find((s) => s.name === selectedState)?.isoCode
+        nigeriaStates.find(
+          (state) => state.name === selectedState
+        )?.isoCode
       )
     : [];
 
+
   const localGovernments = useMemo(() => {
-  if (!selectedState) return [];
 
-  return lgas(selectedState) || [];
-}, [selectedState]);
+    if (!selectedState) {
+      return [];
+    }
 
-  // ======================
-  // FILTERING (FRONTEND)
-  // ======================
+    return lgas(selectedState) || [];
+
+  }, [selectedState]);
+
+
+  // ==========================================================
+  // FRONTEND FILTERING
+  // ==========================================================
+
   const filteredWorkers = useMemo(() => {
-    return workers.filter((w) => {
-      const matchSearch =
-        w.fullName?.toLowerCase().includes(searchName.toLowerCase()) ||
-        w.skill?.toLowerCase().includes(searchName.toLowerCase()) ||
-        (w.skills || []).join(' ').toLowerCase().includes(searchName.toLowerCase());
+  return workers.filter((worker) => {
+    const search = searchName.trim().toLowerCase();
 
-      const matchState = selectedState ? w.location?.state === selectedState : true;
-      const matchCity = selectedCity ? w.location?.city === selectedCity : true;
-      const matchLGA = selectedLGA
-        ? w.location?.localGovernment === selectedLGA
-        : true;
+    const matchSkill = search
+      ? worker.skill?.toLowerCase().includes(search)
+      : true;
 
-      return matchSearch && matchState && matchCity && matchLGA;
-    });
-  }, [workers, searchName, selectedState, selectedCity, selectedLGA]);
-  const isFiltering =
-  searchName ||
-  selectedState ||
-  selectedCity ||
-  selectedLGA;
+    const matchState = selectedState
+      ? worker.location?.state === selectedState
+      : true;
 
-  const displayedWorkers = isFiltering
-  ? filteredWorkers
-  : filteredWorkers.slice(0, 12);
+    const matchCity = selectedCity
+      ? worker.location?.city === selectedCity
+      : true;
 
-useEffect(() => {
-  const interval = setInterval(() => {
-    setCurrentTestimonial((prev) =>
-      prev === testimonials.length - 1 ? 0 : prev + 1
+    const matchLGA = selectedLGA
+      ? worker.location?.localGovernment === selectedLGA
+      : true;
+
+    return (
+      matchSkill &&
+      matchState &&
+      matchCity &&
+      matchLGA
     );
-  }, 5000);
+  });
+}, [
+  workers,
+  searchName,
+  selectedState,
+  selectedCity,
+  selectedLGA,
+]);
 
-  return () => clearInterval(interval);
-}, []);
+
+  // ==========================================================
+  // NORMAL FILTER CHECK
+  // ==========================================================
+
+  const hasNormalFilters =
+    Boolean(searchName.trim()) ||
+    Boolean(selectedState) ||
+    Boolean(selectedCity) ||
+    Boolean(selectedLGA);
+
+
+  // ==========================================================
+  // TESTIMONIAL SLIDER
+  // ==========================================================
+
+  useEffect(() => {
+
+    const interval = setInterval(() => {
+
+      setCurrentTestimonial((previous) =>
+        previous === testimonials.length - 1
+          ? 0
+          : previous + 1
+      );
+
+    }, 5000);
+
+
+    return () => clearInterval(interval);
+
+  }, []);
+
+
+  // ==========================================================
+  // USE MY LOCATION
+  // ==========================================================
+
+  const handleUseLocation = () => {
+
+    setLocationSearchSkill(
+      searchName.trim()
+    );
+
+    setLocationSearch(true);
+
+    setSelectedState('');
+    setSelectedCity('');
+    setSelectedLGA('');
+
+    getLocation();
+
+  };
+
+
+  // ==========================================================
+  // FETCH NEARBY WORKERS
+  // ==========================================================
+
+  useEffect(() => {
+
+    if (!location || !locationSearch) {
+      return;
+    }
+
+
+    const fetchNearbyWorkers = async () => {
+
+      try {
+
+        setLocationSearchLoading(true);
+
+
+        const params =
+          new URLSearchParams();
+
+
+        if (locationSearchSkill) {
+
+          params.append(
+            'skill',
+            locationSearchSkill
+          );
+
+        }
+
+
+        params.append(
+          'latitude',
+          location.latitude
+        );
+
+
+        params.append(
+          'longitude',
+          location.longitude
+        );
+
+
+        params.append(
+          'radius',
+          selectedRadius
+        );
+
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/users/workers/all?${params.toString()}`
+        );
+
+
+        const data = await res.json();
+
+
+        if (!res.ok) {
+
+          throw new Error(
+            data.message ||
+              'Failed to find nearby workers'
+          );
+
+        }
+
+
+        setNearbyWorkers(
+          data.workers || []
+        );
+
+      } catch (error) {
+
+        console.error(
+          'Nearby workers error:',
+          error
+        );
+
+        setNearbyWorkers([]);
+
+      } finally {
+
+        setLocationSearchLoading(false);
+
+      }
+
+    };
+
+
+    fetchNearbyWorkers();
+
+  }, [
+    location,
+    locationSearch,
+    locationSearchSkill,
+    selectedRadius,
+  ]);
+
+
+  // ==========================================================
+  // CLEAR NORMAL FILTERS
+  // ==========================================================
+
+  const clearNormalFilters = () => {
+
+    setSearchName('');
+    setSelectedState('');
+    setSelectedCity('');
+    setSelectedLGA('');
+
+  };
+
+
+  // ==========================================================
+  // CLEAR LOCATION SEARCH
+  // ==========================================================
+
+  const clearLocationSearch = () => {
+
+    setLocationSearch(false);
+
+    setNearbyWorkers([]);
+
+    setLocationSearchSkill('');
+
+  };
+
+
+  // ==========================================================
+  // CLEAR EVERYTHING
+  // ==========================================================
+
+  const clearAllFilters = () => {
+
+    clearNormalFilters();
+
+    clearLocationSearch();
+
+  };
+
+
+  // ==========================================================
+  // DETERMINE WORKERS TO DISPLAY
+  // ==========================================================
+
+  const workersToDisplay =
+    locationSearch
+      ? nearbyWorkers
+      : filteredWorkers;
+
+
+  /*
+   * When no filter is active, show the first 12.
+   *
+   * Once the user starts filtering, show every
+   * matching worker.
+   */
+
+  const displayedWorkers =
+    locationSearch || hasNormalFilters
+      ? workersToDisplay
+      : workersToDisplay.slice(0, 12);
+
+
+  // ==========================================================
+  // ACTIVE FILTER COUNT
+  // ==========================================================
+
+  const activeFilterCount =
+    Number(Boolean(searchName.trim())) +
+    Number(Boolean(selectedState)) +
+    Number(Boolean(selectedCity)) +
+    Number(Boolean(selectedLGA)) +
+    Number(Boolean(locationSearch));
+
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
+
     <div className="min-h-screen bg-gray-950 text-white">
 
-      {/* ================= HERO ================= */}
+
+      {/* =====================================================
+          HERO + SEARCH
+      ====================================================== */}
+
       <main
-        className="relative min-h-screen flex items-center justify-center px-5 md:px-10"
+        className="relative min-h-screen flex items-center justify-center px-5 md:px-10 overflow-hidden"
         style={{
-          backgroundImage: "url('/images/download.jpeg')",
+          backgroundImage:
+            "url('/images/download.jpeg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
         }}
       >
-        <div className="absolute inset-0 bg-black/75"></div>
 
-        <div className="relative z-10 text-center max-w-5xl w-full pt-24">
+        <div className="absolute inset-0 bg-black/80" />
 
-          <p className="text-orange-500 font-semibold tracking-widest uppercase mb-4">
-            Trusted Artisan Marketplace
-          </p>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-gray-950" />
 
-          <h1 className="text-white text-4xl md:text-7xl font-extrabold leading-tight mb-6">
-            Find Skilled <span className="text-orange-500">Workers</span> Near You
+
+        <motion.div
+          initial={{
+            opacity: 0,
+            y: 30,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            duration: 0.8,
+          }}
+          className="relative z-10 text-center max-w-6xl w-full pt-24 pb-20"
+        >
+
+
+          {/* BADGE */}
+
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-sm font-semibold mb-6">
+
+            <FaCheckCircle />
+
+            Nigeria's trusted artisan marketplace
+
+          </div>
+
+
+          {/* TITLE */}
+
+          <h1 className="text-white text-4xl sm:text-5xl md:text-7xl font-extrabold leading-tight mb-6">
+
+            Find the Right
+
+            <span className="text-orange-500">
+              {' '}Artisan
+            </span>
+
+            <br />
+
+            Without the Guesswork.
+
           </h1>
 
-          <p className="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto mb-10">
-            Connect with verified electricians, plumbers, mechanics, cleaners, and trusted professionals across Nigeria.
+
+          {/* DESCRIPTION */}
+
+          <p className="text-gray-300 text-base md:text-xl max-w-3xl mx-auto leading-8 mb-10">
+
+            Find verified electricians, plumbers,
+            mechanics, cleaners, carpenters and
+            other skilled professionals — wherever
+            you are in Nigeria.
+
           </p>
 
-          {/* SEARCH */}
-          <div className="bg-white/10 backdrop-blur-xl p-4 md:p-6 rounded-3xl border border-white/10 shadow-2xl">
+
+          {/* =================================================
+              SEARCH PANEL
+          ================================================== */}
+
+          <div className="bg-white/10 backdrop-blur-2xl p-4 md:p-6 rounded-3xl border border-white/10 shadow-2xl max-w-5xl mx-auto">
+
+
+            <div className="text-left mb-4">
+
+              <p className="text-white font-semibold">
+                Find an artisan
+              </p>
+
+              <p className="text-gray-400 text-sm mt-1">
+                Search an area or let us find artisans
+                around you.
+              </p>
+
+            </div>
+
+
+            {/* FILTERS */}
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
+
+              {/* SEARCH */}
+
               <div className="flex items-center bg-white rounded-xl px-3">
+
                 <FaSearch className="text-gray-500" />
+
                 <input
                   type="text"
-                  placeholder="Search worker or skill"
+                  placeholder="Search by profession"
                   value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
-                  className="w-full p-3 outline-none text-black"
+                  onChange={(e) => {
+
+                    setSearchName(
+                      e.target.value
+                    );
+
+                    if (locationSearch) {
+                      clearLocationSearch();
+                    }
+
+                  }}
+                  className="w-full p-3 outline-none text-black bg-transparent"
                 />
+
               </div>
+
+
+              {/* STATE */}
 
               <select
                 value={selectedState}
                 onChange={(e) => {
-                  setSelectedState(e.target.value);
+
+                  setSelectedState(
+                    e.target.value
+                  );
+
                   setSelectedCity('');
                   setSelectedLGA('');
+
+                  if (locationSearch) {
+                    clearLocationSearch();
+                  }
+
                 }}
                 className="w-full p-3 rounded-xl bg-white text-black"
               >
-                <option value="">Select State</option>
-                {nigeriaStates.map((s) => (
-                  <option key={s.isoCode} value={s.name}>
-                    {s.name}
+
+                <option value="">
+                  Select State
+                </option>
+
+                {nigeriaStates.map((state) => (
+
+                  <option
+                    key={state.isoCode}
+                    value={state.name}
+                  >
+                    {state.name}
                   </option>
+
                 ))}
+
               </select>
+
+
+              {/* CITY */}
 
               <select
                 value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-                className="w-full p-3 rounded-xl bg-white text-black"
+                onChange={(e) => {
+
+                  setSelectedCity(
+                    e.target.value
+                  );
+
+                  if (locationSearch) {
+                    clearLocationSearch();
+                  }
+
+                }}
+                disabled={!selectedState}
+                className="w-full p-3 rounded-xl bg-white text-black disabled:bg-gray-300"
               >
-                <option value="">Select City</option>
-                {cities.map((c, i) => (
-                  <option key={i} value={c.name}>
-                    {c.name}
+
+                <option value="">
+                  {selectedState
+                    ? 'Select City'
+                    : 'Select state first'}
+                </option>
+
+                {cities.map((city, index) => (
+
+                  <option
+                    key={index}
+                    value={city.name}
+                  >
+                    {city.name}
                   </option>
+
                 ))}
+
               </select>
+
+
+              {/* LGA */}
 
               <select
                 value={selectedLGA}
-                onChange={(e) => setSelectedLGA(e.target.value)}
-                className="w-full p-3 rounded-xl bg-white text-black"
+                onChange={(e) => {
+
+                  setSelectedLGA(
+                    e.target.value
+                  );
+
+                  if (locationSearch) {
+                    clearLocationSearch();
+                  }
+
+                }}
+                disabled={!selectedState}
+                className="w-full p-3 rounded-xl bg-white text-black disabled:bg-gray-300"
               >
-                <option value=""> Local Government Area</option>
-                {localGovernments.map((lga, i) => (
-                  <option key={i} value={lga}>
-                    {lga}
-                  </option>
-                ))}
+
+                <option value="">
+                  {selectedState
+                    ? 'Local Government Area'
+                    : 'Select state first'}
+                </option>
+
+                {localGovernments.map(
+                  (lga, index) => (
+
+                    <option
+                      key={index}
+                      value={lga}
+                    >
+                      {lga}
+                    </option>
+
+                  )
+                )}
+
               </select>
 
             </div>
-          </div>
 
-        </div>
-      </main>
 
-      {/* ================= WORKERS ================= */}
-      <section className="py-10 px-5 md:px-10 max-w-7xl mx-auto border-t border-gray-800">
-        <h2 className="text-3xl font-bold mb-2">Available Workers</h2>
-        <p className="text-gray-400 mb-8">
-          Workers update in real-time as you filter
-        </p>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {displayedWorkers.map((w) => (
-              <div
-                key={w._id}
-                className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden"
+            {/* LOCATION */}
+
+            <div className="mt-4">
+
+              <button
+                type="button"
+                onClick={handleUseLocation}
+                disabled={
+                  locationLoading ||
+                  locationSearchLoading
+                }
+                className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl transition"
               >
-                <Image
-                  src={w.profilePhoto || '/images/default.png'}
-                  alt={w.fullName}
-                  width={500}
-                  height={300}
-                  className="w-full h-60 object-cover"
-                />
 
-                <div className="p-5">
-                  <div className="flex justify-between">
-                    <h3 className="text-xl font-semibold">{w.fullName}</h3>
+                {locationLoading ||
+                locationSearchLoading ? (
 
-                    {w.verification?.isVerified && (
-                      <span className="text-green-500 flex items-center gap-1 text-xs">
-                        <FaCheckCircle /> Verified
-                      </span>
-                    )}
+                  <>
+
+                    <span className="animate-spin">
+                      <FaCompass />
+                    </span>
+
+                    Finding artisans near you...
+
+                  </>
+
+                ) : (
+
+                  <>
+
+                    <FaMapMarkerAlt />
+
+                    Find artisans near me
+
+                  </>
+
+                )}
+
+              </button>
+
+
+              {/* LOCATION ERROR */}
+
+              {locationError && (
+
+                <p className="text-red-400 text-sm text-center mt-2">
+                  {locationError}
+                </p>
+
+              )}
+
+
+              {/* DISTANCE */}
+
+              {locationSearch && (
+
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    height: 0,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    height: 'auto',
+                  }}
+                  className="mt-5 pt-5 border-t border-white/10"
+                >
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+                    <div className="text-left">
+
+                      <p className="text-sm font-semibold text-white">
+                        How far should we search?
+                      </p>
+
+                      <p className="text-xs text-gray-400 mt-1">
+                        Choose a distance from your current location.
+                      </p>
+
+                    </div>
+
+
+                    <div className="grid grid-cols-4 gap-2">
+
+                      {distanceOptions.map(
+                        (distance) => (
+
+                          <button
+                            key={distance}
+                            type="button"
+                            onClick={() =>
+                              setSelectedRadius(
+                                distance
+                              )
+                            }
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
+                              selectedRadius ===
+                              distance
+                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                            }`}
+                          >
+
+                            {distance} km
+
+                          </button>
+
+                        )
+                      )}
+
+                    </div>
+
                   </div>
 
-                  <p className="text-orange-500 text-sm">{w.skill}</p>
+                </motion.div>
 
-                  <p className="text-gray-400 text-sm mt-2">
-                    {w.location?.city}, {w.location?.state}
-                  </p>
+              )}
 
-                  <p className="text-gray-500 text-sm">
-                    {w.yearsOfExperience || 0} yrs experience
-                  </p>
-
-                  <div className="mt-4 flex items-center justify-between gap-3">
-  <Link
-    href={`/workers/${w._id}`}
-    className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg text-sm font-medium"
-  >
-    View Details
-  </Link>
-
-  <a
-    href={`https://wa.me/${w.phone?.replace(/\D/g, '').replace(/^0/, "234")}`}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm flex items-center gap-2"
-  >
-    <FaWhatsapp /> Chat
-  </a>
-</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        
-      </section>
-
-      {/* ================= HOW IT WORKS ================= */}
-      <section className="py-20 px-5 md:px-10 max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold">How It Works</h2>
-          <p className="text-gray-400 mt-2">
-            Get skilled workers in 3 simple steps
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {[
-            {
-              icon: <FaSearch />,
-              title: 'Search',
-              desc: 'Find verified workers near you instantly',
-            },
-            {
-              icon: <FaUserCheck />,
-              title: 'Compare',
-              desc: 'Check profiles, ratings and experience',
-            },
-            {
-              icon: <FaBolt />,
-              title: 'Hire',
-              desc: 'Contact and hire workers directly',
-            },
-          ].map((item, i) => (
-            <div
-              key={i}
-              className="bg-gray-900 border border-gray-800 p-6 rounded-2xl"
-            >
-              <div className="text-orange-500 text-2xl mb-3">{item.icon}</div>
-              <h3 className="text-xl font-bold">{item.title}</h3>
-              <p className="text-gray-400 mt-2">{item.desc}</p>
             </div>
-          ))}
-        </div>
 
-        {/* VIDEO SECTION */}
-        <div className="mt-16 bg-gray-900 border border-gray-800 rounded-2xl p-10 text-center">
-         
-          <video
-  autoPlay
-  muted
-  loop
-  playsInline
-   controls
-   className="w-full md:h-100 rounded-xl shadow-lg object-cover"
->
-  <source src="/findartisans_final_with_audio.mp4" type="video/mp4" />
-  Your browser does not support the video tag.
-</video>
-        </div>
-      </section>
-      {/* ================= TESTIMONIALS ================= */}
+          </div>
 
-<section className="py-20 px-5 md:px-10 bg-gray-950">
 
-  <div className="text-center mb-12">
-    <h2 className="text-4xl font-bold">
-      What Our Users Say
-    </h2>
+          {/* TRUST */}
 
-    <p className="text-gray-400 mt-3">
-      Trusted by customers and artisans across Nigeria.
-    </p>
-  </div>
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 mt-8 text-gray-400 text-sm">
 
-  <div className="max-w-4xl mx-auto">
+            <span className="flex items-center gap-2">
 
-    <AnimatePresence mode="wait">
+              <FaCheckCircle className="text-green-500" />
 
-      <motion.div
-        key={testimonials[currentTestimonial].id}
-        initial={{ opacity: 0, x: 80 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -80 }}
-        transition={{ duration: 0.7 }}
-        className="bg-gray-900 border border-gray-800 rounded-3xl p-10"
+              Verified professionals
+
+            </span>
+
+
+            <span className="flex items-center gap-2">
+
+              <FaMapMarkerAlt className="text-orange-500" />
+
+              Search anywhere in Nigeria
+
+            </span>
+
+
+            <span className="flex items-center gap-2">
+
+              <FaUserCheck className="text-blue-400" />
+
+              Ratings & reviews
+
+            </span>
+
+          </div>
+
+        </motion.div>
+
+      </main>
+
+
+
+      {/* =====================================================
+          LIVE WORKER RESULTS
+      ====================================================== */}
+
+      <section
+        id="worker-results"
+        className="py-16 px-5 md:px-10 bg-gray-950"
       >
 
-        <FaQuoteLeft className="text-4xl text-orange-500 mb-6" />
+        <div className="max-w-7xl mx-auto">
 
-        <p className="text-xl text-gray-300 leading-9 italic">
-          "{testimonials[currentTestimonial].message}"
-        </p>
 
-        <div className="flex mt-6">
-          {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
-            <FaStar
-              key={i}
-              className="text-yellow-400 mr-1"
-            />
-          ))}
+          {/* HEADER */}
+
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-8">
+
+            <div>
+
+              <div className="flex items-center gap-3">
+
+                <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+
+                <span className="text-green-400 text-sm font-semibold">
+                  LIVE RESULTS
+                </span>
+
+              </div>
+
+
+              <h2 className="text-3xl md:text-4xl font-extrabold mt-3">
+
+                {locationSearch
+                  ? 'Artisans Near You'
+                  : hasNormalFilters
+                  ? 'Artisans Matching Your Search'
+                  : 'Trusted Artisans Across Nigeria'}
+
+              </h2>
+
+
+              <p className="text-gray-400 mt-2">
+
+                {locationSearch
+                  ? `Professionals within ${selectedRadius} km of your location`
+                  : hasNormalFilters
+                  ? 'Results update automatically as you refine your search.'
+                  : 'Start searching above to find the right professional.'}
+
+              </p>
+
+            </div>
+
+
+            <div className="flex items-center gap-3">
+
+              <div className="px-4 py-2 rounded-xl bg-gray-900 border border-gray-800">
+
+                <span className="text-orange-500 font-bold">
+                  {displayedWorkers.length}
+                </span>
+
+                <span className="text-gray-400 text-sm ml-1">
+
+                  {displayedWorkers.length === 1
+                    ? 'artisan'
+                    : 'artisans'}{' '}
+                  found
+
+                </span>
+
+              </div>
+
+
+              {activeFilterCount > 0 && (
+
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-2 text-sm bg-gray-900 hover:bg-gray-800 border border-gray-800 px-4 py-2 rounded-xl transition"
+                >
+
+                  <FaUndo />
+
+                  Clear
+
+                </button>
+
+              )}
+
+            </div>
+
+          </div>
+
+
+          {/* ACTIVE FILTERS */}
+
+          {activeFilterCount > 0 && (
+
+            <div className="flex flex-wrap items-center gap-2 mb-8">
+
+              <span className="text-gray-500 text-sm">
+                Filtering by:
+              </span>
+
+
+              {searchName.trim() && (
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSearchName('')
+                  }
+                  className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-300 px-3 py-1.5 rounded-full text-sm"
+                >
+
+                  {searchName}
+
+                  <FaTimes className="text-xs" />
+
+                </button>
+
+              )}
+
+
+              {selectedState && (
+
+                <button
+                  type="button"
+                  onClick={() => {
+
+                    setSelectedState('');
+                    setSelectedCity('');
+                    setSelectedLGA('');
+
+                  }}
+                  className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-300 px-3 py-1.5 rounded-full text-sm"
+                >
+
+                  {selectedState}
+
+                  <FaTimes className="text-xs" />
+
+                </button>
+
+              )}
+
+
+              {selectedCity && (
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedCity('')
+                  }
+                  className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-300 px-3 py-1.5 rounded-full text-sm"
+                >
+
+                  {selectedCity}
+
+                  <FaTimes className="text-xs" />
+
+                </button>
+
+              )}
+
+
+              {selectedLGA && (
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedLGA('')
+                  }
+                  className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-300 px-3 py-1.5 rounded-full text-sm"
+                >
+
+                  {selectedLGA}
+
+                  <FaTimes className="text-xs" />
+
+                </button>
+
+              )}
+
+
+              {locationSearch && (
+
+                <button
+                  type="button"
+                  onClick={clearLocationSearch}
+                  className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-300 px-3 py-1.5 rounded-full text-sm"
+                >
+
+                  <FaMapMarkerAlt />
+
+                  Near me · {selectedRadius} km
+
+                  {locationSearchSkill &&
+                    ` · ${locationSearchSkill}`}
+
+                  <FaTimes className="text-xs" />
+
+                </button>
+
+              )}
+
+            </div>
+
+          )}
+
+
+          {/* =================================================
+              RESULTS
+          ================================================== */}
+
+          {displayedWorkers.length > 0 ? (
+
+            <motion.div
+              layout
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+
+              <AnimatePresence mode="popLayout">
+
+                {displayedWorkers.map((worker) => (
+  <motion.div
+    layout
+    key={worker._id}
+    initial={{
+      opacity: 0,
+      y: 20,
+    }}
+    animate={{
+      opacity: 1,
+      y: 0,
+    }}
+    exit={{
+      opacity: 0,
+      scale: 0.95,
+    }}
+    transition={{
+      duration: 0.3,
+    }}
+  >
+    <WorkerCard worker={worker} />
+  </motion.div>
+))}
+
+              </AnimatePresence>
+
+            </motion.div>
+
+          ) : (
+
+            /* =================================================
+               EMPTY STATE
+            ================================================== */
+
+            <div className="text-center py-16 bg-gray-900 border border-gray-800 rounded-3xl">
+
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gray-800 flex items-center justify-center text-gray-600 text-2xl mb-5">
+
+                <FaSearch />
+
+              </div>
+
+
+              <h3 className="text-xl font-bold">
+                No artisans found
+              </h3>
+
+
+              <p className="text-gray-500 mt-2 max-w-lg mx-auto">
+
+                {locationSearch
+                  ? `We couldn't find any professionals within ${selectedRadius} km. Try expanding your search distance.`
+                  : "We couldn't find workers matching your current search. Try another skill or location."}
+
+              </p>
+
+
+              {locationSearch && (
+
+                <div className="flex flex-wrap justify-center gap-2 mt-5">
+
+                  {distanceOptions
+                    .filter(
+                      (distance) =>
+                        distance >
+                        selectedRadius
+                    )
+                    .map((distance) => (
+
+                      <button
+                        key={distance}
+                        type="button"
+                        onClick={() =>
+                          setSelectedRadius(
+                            distance
+                          )
+                        }
+                        className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm"
+                      >
+
+                        Try {distance} km
+
+                      </button>
+
+                    ))}
+
+                </div>
+
+              )}
+
+
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="mt-6 bg-orange-500 hover:bg-orange-600 px-5 py-2.5 rounded-xl font-semibold transition"
+              >
+
+                Show all artisans
+
+              </button>
+
+            </div>
+
+          )}
+
+
+          {/* BROWSE ALL */}
+
+          {!hasNormalFilters &&
+            !locationSearch &&
+            workers.length > 12 && (
+
+              <div className="text-center mt-8">
+
+                <Link
+                  href="/workers"
+                  className="inline-flex items-center gap-2 text-orange-500 hover:text-orange-400 font-semibold"
+                >
+
+                  Browse all artisans
+
+                  <FaArrowRight />
+
+                </Link>
+
+              </div>
+
+            )}
+
         </div>
 
-        <div className="flex items-center mt-8">
+      </section>
 
-          <Image
-            src={testimonials[currentTestimonial].image}
-            alt={testimonials[currentTestimonial].name}
-            width={70}
-            height={70}
-            className="rounded-full object-cover h-20 w-20"
-          />
 
-          <div className="ml-5">
 
-            <h3 className="font-bold text-lg">
-              {testimonials[currentTestimonial].name}
-            </h3>
+      {/* =====================================================
+          TWO WAYS TO FIND AN ARTISAN
+      ====================================================== */}
 
-            <p className="text-gray-400">
-              {testimonials[currentTestimonial].type}
-              {" • "}
-              {testimonials[currentTestimonial].location}
+      <section className="py-24 px-5 md:px-10 bg-gray-950">
+
+        <div className="max-w-6xl mx-auto">
+
+
+          <div className="text-center max-w-3xl mx-auto mb-14">
+
+            <span className="text-orange-500 font-semibold uppercase tracking-widest text-sm">
+              Find your way
+            </span>
+
+            <h2 className="text-3xl md:text-5xl font-extrabold mt-3">
+
+              Two simple ways to find
+
+              <span className="text-orange-500">
+                {' '}the right person.
+              </span>
+
+            </h2>
+
+            <p className="text-gray-400 mt-5 text-lg leading-8">
+
+              Whether you know exactly where you
+              need help or simply want to know who
+              is closest to you, FindArtisans makes
+              the search simple.
+
             </p>
 
           </div>
 
-        </div>
 
-      </motion.div>
+          <div className="grid md:grid-cols-2 gap-6">
 
-    </AnimatePresence>
 
-  </div>
+            {/* AREA SEARCH */}
 
-</section>
+            <motion.div
+              whileHover={{
+                y: -6,
+              }}
+              transition={{
+                duration: 0.2,
+              }}
+              className="relative overflow-hidden bg-gray-900 border border-gray-800 rounded-3xl p-8 md:p-10"
+            >
 
-      {/* ================= CATEGORY ================= */}
-      {/* <section className="py-16 px-5 md:px-10 max-w-7xl mx-auto">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold">Popular Categories</h2>
-          <p className="text-gray-400">
-            Explore skilled professionals across categories
-          </p>
-        </div>
+              <div className="absolute -right-10 -top-10 w-40 h-40 bg-orange-500/10 rounded-full" />
 
-        <div className="flex flex-wrap justify-center gap-4">
-          {['Electricians', 'Plumbers', 'Mechanics', 'Builders', 'Cleaners', 'Painters'].map(
-            (item, i) => (
-              <div
-                key={i}
-                className="bg-gray-900 border border-gray-800 px-6 py-4 rounded-2xl text-gray-300 hover:text-white"
-              >
-                {item}
+
+              <div className="relative">
+
+                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 text-2xl mb-6">
+
+                  <FaSearch />
+
+                </div>
+
+
+                <span className="text-orange-500 font-bold text-sm">
+                  OPTION 01
+                </span>
+
+
+                <h3 className="text-2xl font-bold mt-3">
+                  Search by area
+                </h3>
+
+
+                <p className="text-gray-400 mt-3 leading-7">
+
+                  Know where you need a service?
+                  Select the state, city and local
+                  government area where you want to
+                  find an artisan.
+
+                </p>
+
+
+                <div className="flex flex-wrap gap-2 mt-6">
+
+                  {[
+                    'State',
+                    'City',
+                    'LGA',
+                  ].map((item, index) => (
+
+                    <React.Fragment
+                      key={item}
+                    >
+
+                      <span className="px-3 py-2 bg-gray-800 rounded-lg text-sm text-gray-300">
+
+                        {item}
+
+                      </span>
+
+
+                      {index < 2 && (
+
+                        <FaChevronRight className="text-gray-600 self-center text-xs" />
+
+                      )}
+
+                    </React.Fragment>
+
+                  ))}
+
+                </div>
+
+
+                <div className="mt-7 flex items-center gap-2 text-sm text-orange-400 font-semibold">
+
+                  <FaCheckCircle />
+
+                  Great when you know the area
+
+                </div>
+
               </div>
-            )
-          )}
+
+            </motion.div>
+
+
+
+            {/* NEARBY SEARCH */}
+
+            <motion.div
+              whileHover={{
+                y: -6,
+              }}
+              transition={{
+                duration: 0.2,
+              }}
+              className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-900 border border-orange-500/20 rounded-3xl p-8 md:p-10"
+            >
+
+              <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-500/10 rounded-full" />
+
+
+              <div className="relative">
+
+                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-2xl mb-6">
+
+                  <FaLocationArrow />
+
+                </div>
+
+
+                <span className="text-blue-400 font-bold text-sm">
+                  OPTION 02
+                </span>
+
+
+                <h3 className="text-2xl font-bold mt-3">
+                  Find artisans near you
+                </h3>
+
+
+                <p className="text-gray-400 mt-3 leading-7">
+
+                  Don't know the area? Let your location
+                  do the work. Choose how far you want
+                  us to search and discover artisans
+                  around you.
+
+                </p>
+
+
+                <div className="flex flex-wrap gap-2 mt-6">
+
+                  {distanceOptions.map(
+                    (distance) => (
+
+                      <span
+                        key={distance}
+                        className="px-3 py-2 bg-gray-800 rounded-lg text-sm text-gray-300"
+                      >
+
+                        {distance} km
+
+                      </span>
+
+                    )
+                  )}
+
+                </div>
+
+
+                <div className="mt-7 flex items-center gap-2 text-sm text-blue-400 font-semibold">
+
+                  <FaCheckCircle />
+
+                  Great when you need someone close
+
+                </div>
+
+              </div>
+
+            </motion.div>
+
+          </div>
+
         </div>
-      </section> */}
+
+      </section>
+
+
+
+      {/* =====================================================
+          HOW IT WORKS
+      ====================================================== */}
+
+      <section className="py-24 px-5 md:px-10 bg-gray-900/50">
+
+        <div className="max-w-6xl mx-auto">
+
+          <div className="text-center mb-16">
+
+            <span className="text-orange-500 font-semibold uppercase tracking-widest text-sm">
+              Simple from start to finish
+            </span>
+
+            <h2 className="text-3xl md:text-5xl font-extrabold mt-3">
+              Find. Verify. Connect.
+            </h2>
+
+            <p className="text-gray-400 mt-4 max-w-2xl mx-auto">
+
+              We make it easier to discover the right
+              professional without wasting time asking
+              around.
+
+            </p>
+
+          </div>
+
+
+          <div className="grid md:grid-cols-4 gap-6">
+
+            {[
+              {
+                number: '01',
+                icon: <FaSearch />,
+                title: 'Find',
+                description:
+                  'Search by your area or use your location to discover nearby artisans.',
+              },
+              {
+                number: '02',
+                icon: <FaCheckCircle />,
+                title: 'Verify',
+                description:
+                  'Look for verified profiles and learn more about the artisan before contacting them.',
+              },
+              {
+                number: '03',
+                icon: <FaStar />,
+                title: 'Compare',
+                description:
+                  'Compare experience, skills, ratings and reviews to make a confident choice.',
+              },
+              {
+                number: '04',
+                icon: <FaWhatsapp />,
+                title: 'Connect',
+                description:
+                  'Contact your preferred artisan directly and discuss the job.',
+              },
+            ].map((step, index) => (
+
+              <motion.div
+                key={step.number}
+                initial={{
+                  opacity: 0,
+                  y: 25,
+                }}
+                whileInView={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                viewport={{
+                  once: true,
+                }}
+                transition={{
+                  delay: index * 0.1,
+                }}
+                className="relative bg-gray-900 border border-gray-800 rounded-2xl p-7"
+              >
+
+                <div className="flex items-center justify-between mb-6">
+
+                  <div className="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center text-xl">
+
+                    {step.icon}
+
+                  </div>
+
+
+                  <span className="text-gray-700 font-black text-4xl">
+                    {step.number}
+                  </span>
+
+                </div>
+
+
+                <h3 className="text-xl font-bold">
+                  {step.title}
+                </h3>
+
+
+                <p className="text-gray-400 mt-3 leading-7 text-sm">
+                  {step.description}
+                </p>
+
+              </motion.div>
+
+            ))}
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      {/* =====================================================
+          WHY FINDARTISANS
+      ====================================================== */}
+
+      <section className="py-24 px-5 md:px-10 bg-gray-950">
+
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-14 items-center">
+
+          <div>
+
+            <span className="text-orange-500 font-semibold uppercase tracking-widest text-sm">
+              Why FindArtisans?
+            </span>
+
+
+            <h2 className="text-3xl md:text-5xl font-extrabold mt-3 leading-tight">
+
+              Stop searching blindly.
+
+              <br />
+
+              <span className="text-orange-500">
+                Start choosing confidently.
+              </span>
+
+            </h2>
+
+
+            <p className="text-gray-400 mt-6 leading-8 text-lg">
+
+              Finding a skilled professional shouldn't
+              depend on asking five different people for
+              recommendations. FindArtisans puts useful
+              information in one place so you can make
+              a better decision.
+
+            </p>
+
+
+            <Link
+              href="/workers"
+              className="inline-flex items-center gap-3 mt-8 bg-orange-500 hover:bg-orange-600 px-6 py-3.5 rounded-xl font-bold transition"
+            >
+
+              Browse all artisans
+
+              <FaArrowRight />
+
+            </Link>
+
+          </div>
+
+
+          <div className="grid sm:grid-cols-2 gap-4">
+
+            {[
+              {
+                icon: <FaShieldAlt />,
+                title: 'Verified Professionals',
+                text:
+                  'Find artisans whose profiles have gone through our verification process.',
+              },
+              {
+                icon: <FaMapMarkerAlt />,
+                title: 'Location-Based Search',
+                text:
+                  'Search by area or discover professionals close to your current location.',
+              },
+              {
+                icon: <FaStar />,
+                title: 'Ratings & Reviews',
+                text:
+                  'See what other customers have to say before making your choice.',
+              },
+              {
+                icon: <FaPhoneAlt />,
+                title: 'Direct Contact',
+                text:
+                  'Connect directly with artisans instead of going through unnecessary middlemen.',
+              },
+            ].map((item) => (
+
+              <motion.div
+                key={item.title}
+                whileHover={{
+                  y: -4,
+                }}
+                className="bg-gray-900 border border-gray-800 rounded-2xl p-6"
+              >
+
+                <div className="w-11 h-11 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center text-lg mb-5">
+
+                  {item.icon}
+
+                </div>
+
+
+                <h3 className="font-bold text-lg">
+                  {item.title}
+                </h3>
+
+
+                <p className="text-gray-400 text-sm mt-2 leading-6">
+                  {item.text}
+                </p>
+
+              </motion.div>
+
+            ))}
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      {/* =====================================================
+          POPULAR CATEGORIES
+      ====================================================== */}
+
+      <section className="py-24 px-5 md:px-10 bg-gray-900/50">
+
+        <div className="max-w-7xl mx-auto">
+
+
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-12">
+
+            <div>
+
+              <span className="text-orange-500 font-semibold uppercase tracking-widest text-sm">
+                Explore services
+              </span>
+
+              <h2 className="text-3xl md:text-4xl font-extrabold mt-3">
+                What kind of artisan do you need?
+              </h2>
+
+            </div>
+
+
+            <Link
+              href="/workers"
+              className="text-orange-500 hover:text-orange-400 font-semibold flex items-center gap-2"
+            >
+
+              View all workers
+
+              <FaArrowRight />
+
+            </Link>
+
+          </div>
+
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+
+            {categories.map(
+              (category) => (
+
+                <Link
+                  key={category.title}
+                  href={`/workers?skill=${encodeURIComponent(
+  category.title.replace(/s$/, '')
+)}`}
+                  className="group bg-gray-900 border border-gray-800 hover:border-orange-500/40 rounded-2xl p-5 transition"
+                >
+
+                  <div className="w-12 h-12 rounded-xl bg-orange-500/10 group-hover:bg-orange-500 text-orange-500 group-hover:text-white flex items-center justify-center text-xl transition">
+
+                    {category.icon}
+
+                  </div>
+
+
+                  <h3 className="font-bold mt-5">
+                    {category.title}
+                  </h3>
+
+
+                  <p className="text-gray-500 text-xs leading-5 mt-2">
+                    {category.description}
+                  </p>
+
+                </Link>
+
+              )
+            )}
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      {/* =====================================================
+          TESTIMONIALS
+      ====================================================== */}
+
+      <section className="py-24 px-5 md:px-10 bg-gray-900/50">
+
+        <div className="max-w-5xl mx-auto">
+
+          <div className="text-center mb-12">
+
+            <span className="text-orange-500 font-semibold uppercase tracking-widest text-sm">
+              Real experiences
+            </span>
+
+            <h2 className="text-3xl md:text-5xl font-extrabold mt-3">
+              People are finding their people.
+            </h2>
+
+            <p className="text-gray-400 mt-3">
+              Hear from customers and artisans using FindArtisans.
+            </p>
+
+          </div>
+
+
+          <AnimatePresence mode="wait">
+
+            <motion.div
+              key={
+                testimonials[
+                  currentTestimonial
+                ].id
+              }
+              initial={{
+                opacity: 0,
+                x: 80,
+              }}
+              animate={{
+                opacity: 1,
+                x: 0,
+              }}
+              exit={{
+                opacity: 0,
+                x: -80,
+              }}
+              transition={{
+                duration: 0.7,
+              }}
+              className="bg-gray-900 border border-gray-800 rounded-3xl p-8 md:p-12"
+            >
+
+              <FaQuoteLeft className="text-4xl text-orange-500 mb-6" />
+
+
+              <p className="text-xl md:text-2xl text-gray-300 leading-9 italic">
+
+                "
+                {
+                  testimonials[
+                    currentTestimonial
+                  ].message
+                }
+                "
+
+              </p>
+
+
+              <div className="flex mt-6">
+
+                {[
+                  ...Array(
+                    testimonials[
+                      currentTestimonial
+                    ].rating
+                  ),
+                ].map((_, index) => (
+
+                  <FaStar
+                    key={index}
+                    className="text-yellow-400 mr-1"
+                  />
+
+                ))}
+
+              </div>
+
+
+              <div className="flex items-center mt-8">
+
+                <Image
+                  src={
+                    testimonials[
+                      currentTestimonial
+                    ].image
+                  }
+                  alt={
+                    testimonials[
+                      currentTestimonial
+                    ].name
+                  }
+                  width={70}
+                  height={70}
+                  className="rounded-full object-cover h-20 w-20"
+                />
+
+
+                <div className="ml-5">
+
+                  <h3 className="font-bold text-lg">
+
+                    {
+                      testimonials[
+                        currentTestimonial
+                      ].name
+                    }
+
+                  </h3>
+
+
+                  <p className="text-gray-400">
+
+                    {
+                      testimonials[
+                        currentTestimonial
+                      ].type
+                    }
+
+                    {' • '}
+
+                    {
+                      testimonials[
+                        currentTestimonial
+                      ].location
+                    }
+
+                  </p>
+
+                </div>
+
+              </div>
+
+            </motion.div>
+
+          </AnimatePresence>
+
+
+          <div className="flex justify-center gap-2 mt-6">
+
+            {testimonials.map(
+              (testimonial, index) => (
+
+                <button
+                  key={testimonial.id}
+                  type="button"
+                  onClick={() =>
+                    setCurrentTestimonial(
+                      index
+                    )
+                  }
+                  className={`h-2 rounded-full transition-all ${
+                    index ===
+                    currentTestimonial
+                      ? 'w-8 bg-orange-500'
+                      : 'w-2 bg-gray-700'
+                  }`}
+                />
+
+              )
+            )}
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      {/* =====================================================
+          FINAL CTA
+      ====================================================== */}
+
+      <section className="px-5 md:px-10 py-24">
+
+        <div className="max-w-6xl mx-auto relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-600 to-orange-500 p-8 md:p-16">
+
+          <div className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-white/10" />
+
+          <div className="absolute -left-20 -bottom-20 w-72 h-72 rounded-full bg-black/10" />
+
+
+          <div className="relative z-10 grid md:grid-cols-2 gap-10 items-center">
+
+            <div>
+
+              <p className="text-orange-100 uppercase tracking-widest text-sm font-bold">
+                Your next job starts here
+              </p>
+
+
+              <h2 className="text-3xl md:text-5xl font-extrabold mt-3 leading-tight">
+                Need a skilled artisan?
+              </h2>
+
+
+              <p className="text-orange-50 mt-5 text-lg leading-8 max-w-xl">
+
+                Find someone you can trust,
+                check their profile, compare your
+                options and get in touch.
+
+              </p>
+
+            </div>
+
+
+            <div className="flex flex-col sm:flex-row md:justify-end gap-3">
+
+              <Link
+                href="/workers"
+                className="inline-flex items-center justify-center gap-3 bg-white text-orange-600 hover:bg-gray-100 px-6 py-3.5 rounded-xl font-bold transition"
+              >
+
+                Browse artisans
+
+                <FaArrowRight />
+
+              </Link>
+
+
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center gap-3 bg-black/20 hover:bg-black/30 text-white border border-white/20 px-6 py-3.5 rounded-xl font-bold transition"
+              >
+
+                Join FindArtisans
+
+                <FaUserTie />
+
+              </Link>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
 
     </div>
+
   );
+
 };
+
 
 export default Homepage;
