@@ -765,26 +765,26 @@ onChange={async (e) => {
   <button
     type="button"
     onClick={async () => {
-      try {
-        setGettingLocation(true)
+  try {
+    setGettingLocation(true)
 
-        const coordinates =
-          await getCurrentLocation()
+    const coordinates =
+      await getCurrentLocation()
 
-        toast.success(
-          'Your current location has been detected'
-        )
+    console.log(
+      'Worker coordinates:',
+      coordinates
+    )
 
-        console.log(
-          'Worker coordinates:',
-          coordinates
-        )
-      } catch (error) {
-        toast.error(error.message)
-      } finally {
-        setGettingLocation(false)
-      }
-    }}
+    toast.success(
+      'Your current location has been detected and saved'
+    )
+  } catch (error) {
+    toast.error(error.message)
+  } finally {
+    setGettingLocation(false)
+  }
+}}
     disabled={gettingLocation}
     className="w-full mt-4 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 sm:px-5 py-3.5 sm:py-3 rounded-2xl flex items-center justify-center gap-2 transition font-medium text-sm sm:text-base"
   >
