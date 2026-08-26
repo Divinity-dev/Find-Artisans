@@ -1,15 +1,29 @@
-'use client';
+'use client'
 
-import React, { useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
-import { State, City } from 'country-state-city';
-import { lgas } from 'nigerian-states-and-lgas';
+import Image from 'next/image'
+import Link from 'next/link'
 
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  State,
+  City,
+} from 'country-state-city'
 
-import useGeolocation from '../hooks/useGeolocation';
+import {
+  lgas,
+} from 'nigerian-states-and-lgas'
+
+import {
+  motion,
+  AnimatePresence,
+} from 'framer-motion'
+
+import useGeolocation from '../hooks/useGeolocation'
 import WorkerCard from '../components/WorkerCard'
 
 import {
@@ -35,7 +49,7 @@ import {
   FaPaintRoller,
   FaBroom,
   FaCar,
-} from 'react-icons/fa';
+} from 'react-icons/fa'
 
 
 // ============================================================
@@ -83,7 +97,7 @@ const testimonials = [
       'FindArtisans has helped me grow my business and reach more clients.',
     rating: 5,
   },
-];
+]
 
 
 // ============================================================
@@ -127,7 +141,7 @@ const categories = [
     description:
       'Vehicle repairs, servicing and diagnostics.',
   },
-];
+]
 
 
 // ============================================================
@@ -145,37 +159,64 @@ const Homepage = ({ workers = [] }) => {
     loading: locationLoading,
     error: locationError,
     getLocation,
-  } = useGeolocation();
+  } = useGeolocation()
 
-  const [nearbyWorkers, setNearbyWorkers] = useState([]);
+
+  // ==========================================================
+  // WORKER RESULTS
+  // ==========================================================
+
+  const [filteredWorkers, setFilteredWorkers] =
+    useState([])
+
+  const [totalWorkers, setTotalWorkers] =
+    useState(0)
+
+  const [totalPages, setTotalPages] =
+    useState(1)
+
+  const [currentPage, setCurrentPage] =
+    useState(1)
+
+  const [workersLoading, setWorkersLoading] =
+    useState(false)
+
+  const [workersError, setWorkersError] =
+    useState('')
+
+
+  // ==========================================================
+  // NEARBY SEARCH
+  // ==========================================================
 
   const [locationSearch, setLocationSearch] =
-    useState(false);
-
-  const [locationSearchLoading, setLocationSearchLoading] =
-    useState(false);
+    useState(false)
 
   const [locationSearchSkill, setLocationSearchSkill] =
-    useState('');
+    useState('')
+
+  const [locationSearchLoading, setLocationSearchLoading] =
+    useState(false)
+
+  const [selectedRadius, setSelectedRadius] =
+    useState(5)
 
 
   // ==========================================================
   // FILTERS
   // ==========================================================
 
-  const [searchName, setSearchName] = useState('');
+  const [searchName, setSearchName] =
+    useState('')
 
   const [selectedState, setSelectedState] =
-    useState('');
+    useState('')
 
   const [selectedCity, setSelectedCity] =
-    useState('');
+    useState('')
 
   const [selectedLGA, setSelectedLGA] =
-    useState('');
-
-  const [selectedRadius, setSelectedRadius] =
-    useState(5);
+    useState('')
 
 
   // ==========================================================
@@ -183,14 +224,21 @@ const Homepage = ({ workers = [] }) => {
   // ==========================================================
 
   const [currentTestimonial, setCurrentTestimonial] =
-    useState(0);
+    useState(0)
 
 
   // ==========================================================
-  // DISTANCE OPTIONS
+  // CONSTANTS
   // ==========================================================
 
-  const distanceOptions = [1, 3, 5, 10];
+  const distanceOptions = [
+    1,
+    3,
+    5,
+    10,
+  ]
+
+  const workersPerPage = 12
 
 
   // ==========================================================
@@ -198,68 +246,60 @@ const Homepage = ({ workers = [] }) => {
   // ==========================================================
 
   const nigeriaStates =
-    State.getStatesOfCountry('NG');
+    useMemo(
+      () =>
+        State.getStatesOfCountry('NG'),
+      []
+    )
 
 
-  const cities = selectedState
-    ? City.getCitiesOfState(
-        'NG',
-        nigeriaStates.find(
-          (state) => state.name === selectedState
-        )?.isoCode
-      )
-    : [];
+  // ==========================================================
+  // CITIES
+  // ==========================================================
 
-
-  const localGovernments = useMemo(() => {
+  const cities = useMemo(() => {
 
     if (!selectedState) {
-      return [];
+      return []
     }
 
-    return lgas(selectedState) || [];
+    const state =
+      nigeriaStates.find(
+        (item) =>
+          item.name === selectedState
+      )
 
-  }, [selectedState]);
+    if (!state) {
+      return []
+    }
+
+    return City.getCitiesOfState(
+      'NG',
+      state.isoCode
+    )
+
+  }, [
+    selectedState,
+    nigeriaStates,
+  ])
 
 
   // ==========================================================
-  // FRONTEND FILTERING
+  // LGAs
   // ==========================================================
 
-  const filteredWorkers = useMemo(() => {
-  return workers.filter((worker) => {
-    const search = searchName.trim().toLowerCase();
+  const localGovernments =
+    useMemo(() => {
 
-    const matchSkill = search
-      ? worker.skill?.toLowerCase().includes(search)
-      : true;
+      if (!selectedState) {
+        return []
+      }
 
-    const matchState = selectedState
-      ? worker.location?.state === selectedState
-      : true;
+      return lgas(selectedState) || []
 
-    const matchCity = selectedCity
-      ? worker.location?.city === selectedCity
-      : true;
-
-    const matchLGA = selectedLGA
-      ? worker.location?.localGovernment === selectedLGA
-      : true;
-
-    return (
-      matchSkill &&
-      matchState &&
-      matchCity &&
-      matchLGA
-    );
-  });
-}, [
-  workers,
-  searchName,
-  selectedState,
-  selectedCity,
-  selectedLGA,
-]);
+    }, [
+      selectedState,
+    ])
 
 
   // ==========================================================
@@ -267,10 +307,34 @@ const Homepage = ({ workers = [] }) => {
   // ==========================================================
 
   const hasNormalFilters =
-    Boolean(searchName.trim()) ||
+    Boolean(
+      searchName.trim()
+    ) ||
     Boolean(selectedState) ||
     Boolean(selectedCity) ||
-    Boolean(selectedLGA);
+    Boolean(selectedLGA)
+
+
+  // ==========================================================
+  // ACTIVE FILTER COUNT
+  // ==========================================================
+
+  const activeFilterCount =
+    Number(
+      Boolean(searchName.trim())
+    ) +
+    Number(
+      Boolean(selectedState)
+    ) +
+    Number(
+      Boolean(selectedCity)
+    ) +
+    Number(
+      Boolean(selectedLGA)
+    ) +
+    Number(
+      Boolean(locationSearch)
+    )
 
 
   // ==========================================================
@@ -279,20 +343,309 @@ const Homepage = ({ workers = [] }) => {
 
   useEffect(() => {
 
-    const interval = setInterval(() => {
+    const interval =
+      setInterval(() => {
 
-      setCurrentTestimonial((previous) =>
-        previous === testimonials.length - 1
-          ? 0
-          : previous + 1
-      );
+        setCurrentTestimonial(
+          (previous) =>
+            previous ===
+            testimonials.length - 1
+              ? 0
+              : previous + 1
+        )
 
-    }, 5000);
+      }, 5000)
+
+    return () =>
+      clearInterval(interval)
+
+  }, [])
 
 
-    return () => clearInterval(interval);
+  // ==========================================================
+  // FETCH WORKERS FROM BACKEND
+  // ==========================================================
 
-  }, []);
+  useEffect(() => {
+
+    /*
+     * We need coordinates when doing
+     * "near me" search.
+     */
+
+    if (
+      locationSearch &&
+      !location
+    ) {
+      return
+    }
+
+
+    /*
+     * Debounce normal skill searching.
+     *
+     * This prevents a request for
+     * every individual keystroke.
+     */
+
+    const timeout =
+      setTimeout(async () => {
+
+        try {
+
+          setWorkersError('')
+
+
+          if (locationSearch) {
+
+            setLocationSearchLoading(true)
+
+          } else {
+
+            setWorkersLoading(true)
+
+          }
+
+
+          const params =
+            new URLSearchParams()
+
+
+          // ======================================
+          // NORMAL SKILL SEARCH
+          // ======================================
+
+          if (
+            searchName.trim()
+          ) {
+
+            params.set(
+              'skill',
+              searchName.trim()
+            )
+
+          }
+
+
+          // ======================================
+          // NORMAL LOCATION FILTERS
+          // ======================================
+
+          if (
+            !locationSearch &&
+            selectedState
+          ) {
+
+            params.set(
+              'state',
+              selectedState
+            )
+
+          }
+
+          if (
+            !locationSearch &&
+            selectedCity
+          ) {
+
+            params.set(
+              'city',
+              selectedCity
+            )
+
+          }
+
+          if (
+            !locationSearch &&
+            selectedLGA
+          ) {
+
+            params.set(
+              'localGovernment',
+              selectedLGA
+            )
+
+          }
+
+
+          // ======================================
+          // NEARBY SEARCH
+          // ======================================
+
+          if (
+            locationSearch &&
+            location
+          ) {
+
+            params.set(
+              'latitude',
+              String(location.latitude)
+            )
+
+            params.set(
+              'longitude',
+              String(location.longitude)
+            )
+
+            params.set(
+              'radius',
+              String(selectedRadius)
+            )
+
+            /*
+             * For nearby search use the
+             * saved skill rather than
+             * the normal search input.
+             */
+
+            if (
+              locationSearchSkill.trim()
+            ) {
+
+              params.set(
+                'skill',
+                locationSearchSkill.trim()
+              )
+
+            }
+
+          }
+
+
+          // ======================================
+          // PAGINATION
+          // ======================================
+
+          params.set(
+            'page',
+            String(currentPage)
+          )
+
+          params.set(
+            'limit',
+            String(workersPerPage)
+          )
+
+
+          // ======================================
+          // API REQUEST
+          // ======================================
+
+          const apiUrl =
+            process.env.NEXT_PUBLIC_API_URL
+
+
+          if (!apiUrl) {
+
+            throw new Error(
+              'NEXT_PUBLIC_API_URL is not configured'
+            )
+
+          }
+
+
+          const response =
+            await fetch(
+              `${apiUrl}/users/workers/all?${params.toString()}`,
+              {
+                method: 'GET',
+                cache: 'no-store',
+              }
+            )
+
+
+          const data =
+            await response.json()
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              data.message ||
+              'Failed to fetch workers'
+            )
+
+          }
+
+
+          // ======================================
+          // SAVE RESULTS
+          // ======================================
+
+          setFilteredWorkers(
+            data.workers || []
+          )
+
+          setTotalWorkers(
+            Number(data.total) || 0
+          )
+
+          setTotalPages(
+            Number(data.totalPages) || 1
+          )
+
+        } catch (error) {
+
+          console.error(
+            'Worker fetch error:',
+            error
+          )
+
+          setFilteredWorkers([])
+
+          setTotalWorkers(0)
+
+          setTotalPages(1)
+
+          setWorkersError(
+            error.message ||
+            'Unable to load artisans'
+          )
+
+        } finally {
+
+          setWorkersLoading(false)
+
+          setLocationSearchLoading(false)
+
+        }
+
+      }, 400)
+
+
+    return () =>
+      clearTimeout(timeout)
+
+  }, [
+    searchName,
+    selectedState,
+    selectedCity,
+    selectedLGA,
+    currentPage,
+    locationSearch,
+    location,
+    locationSearchSkill,
+    selectedRadius,
+  ])
+
+
+  // ==========================================================
+  // RESET PAGE WHEN FILTER CHANGES
+  // ==========================================================
+
+  useEffect(() => {
+
+    setCurrentPage(1)
+
+  }, [
+    searchName,
+    selectedState,
+    selectedCity,
+    selectedLGA,
+    locationSearch,
+    locationSearchSkill,
+    selectedRadius,
+  ])
 
 
   // ==========================================================
@@ -301,119 +654,43 @@ const Homepage = ({ workers = [] }) => {
 
   const handleUseLocation = () => {
 
+    /*
+     * Save whatever skill the user
+     * currently typed.
+     */
+
     setLocationSearchSkill(
       searchName.trim()
-    );
-
-    setLocationSearch(true);
-
-    setSelectedState('');
-    setSelectedCity('');
-    setSelectedLGA('');
-
-    getLocation();
-
-  };
+    )
 
 
-  // ==========================================================
-  // FETCH NEARBY WORKERS
-  // ==========================================================
+    /*
+     * Clear normal location filters.
+     */
 
-  useEffect(() => {
+    setSelectedState('')
 
-    if (!location || !locationSearch) {
-      return;
-    }
+    setSelectedCity('')
 
-
-    const fetchNearbyWorkers = async () => {
-
-      try {
-
-        setLocationSearchLoading(true);
+    setSelectedLGA('')
 
 
-        const params =
-          new URLSearchParams();
+    /*
+     * Turn on nearby search.
+     */
+
+    setLocationSearch(true)
+
+    setCurrentPage(1)
 
 
-        if (locationSearchSkill) {
+    /*
+     * Ask browser for location.
+     */
 
-          params.append(
-            'skill',
-            locationSearchSkill
-          );
+    getLocation()
 
-        }
-
-
-        params.append(
-          'latitude',
-          location.latitude
-        );
-
-
-        params.append(
-          'longitude',
-          location.longitude
-        );
-
-
-        params.append(
-          'radius',
-          selectedRadius
-        );
-
-
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/users/workers/all?${params.toString()}`
-        );
-
-
-        const data = await res.json();
-
-
-        if (!res.ok) {
-
-          throw new Error(
-            data.message ||
-              'Failed to find nearby workers'
-          );
-
-        }
-
-
-        setNearbyWorkers(
-          data.workers || []
-        );
-
-      } catch (error) {
-
-        console.error(
-          'Nearby workers error:',
-          error
-        );
-
-        setNearbyWorkers([]);
-
-      } finally {
-
-        setLocationSearchLoading(false);
-
-      }
-
-    };
-
-
-    fetchNearbyWorkers();
-
-  }, [
-    location,
-    locationSearch,
-    locationSearchSkill,
-    selectedRadius,
-  ]);
+  }
 
 
   // ==========================================================
@@ -422,12 +699,17 @@ const Homepage = ({ workers = [] }) => {
 
   const clearNormalFilters = () => {
 
-    setSearchName('');
-    setSelectedState('');
-    setSelectedCity('');
-    setSelectedLGA('');
+    setSearchName('')
 
-  };
+    setSelectedState('')
+
+    setSelectedCity('')
+
+    setSelectedLGA('')
+
+    setCurrentPage(1)
+
+  }
 
 
   // ==========================================================
@@ -436,13 +718,13 @@ const Homepage = ({ workers = [] }) => {
 
   const clearLocationSearch = () => {
 
-    setLocationSearch(false);
+    setLocationSearch(false)
 
-    setNearbyWorkers([]);
+    setLocationSearchSkill('')
 
-    setLocationSearchSkill('');
+    setCurrentPage(1)
 
-  };
+  }
 
 
   // ==========================================================
@@ -451,46 +733,77 @@ const Homepage = ({ workers = [] }) => {
 
   const clearAllFilters = () => {
 
-    clearNormalFilters();
+    setSearchName('')
 
-    clearLocationSearch();
+    setSelectedState('')
 
-  };
+    setSelectedCity('')
+
+    setSelectedLGA('')
+
+    setLocationSearch(false)
+
+    setLocationSearchSkill('')
+
+    setCurrentPage(1)
+
+  }
 
 
   // ==========================================================
-  // DETERMINE WORKERS TO DISPLAY
+  // PAGE CHANGE
+  // ==========================================================
+
+  const goToPage = (page) => {
+
+    if (
+      page < 1 ||
+      page > totalPages
+    ) {
+      return
+    }
+
+    setCurrentPage(page)
+
+    /*
+     * Scroll back to results.
+     */
+
+    setTimeout(() => {
+
+      document
+        .getElementById(
+          'worker-results'
+        )
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        })
+
+    }, 50)
+
+  }
+
+
+  // ==========================================================
+  // WORKERS TO DISPLAY
   // ==========================================================
 
   const workersToDisplay =
-    locationSearch
-      ? nearbyWorkers
-      : filteredWorkers;
-
-
-  /*
-   * When no filter is active, show the first 12.
-   *
-   * Once the user starts filtering, show every
-   * matching worker.
-   */
-
-  const displayedWorkers =
-    locationSearch || hasNormalFilters
-      ? workersToDisplay
-      : workersToDisplay.slice(0, 12);
+    filteredWorkers
 
 
   // ==========================================================
-  // ACTIVE FILTER COUNT
+  // LOADING STATE
   // ==========================================================
 
-  const activeFilterCount =
-    Number(Boolean(searchName.trim())) +
-    Number(Boolean(selectedState)) +
-    Number(Boolean(selectedCity)) +
-    Number(Boolean(selectedLGA)) +
-    Number(Boolean(locationSearch));
+  const isLoading =
+    workersLoading ||
+    locationSearchLoading ||
+    (
+      locationSearch &&
+      locationLoading
+    )
 
 
   // ==========================================================
@@ -618,10 +931,14 @@ const Homepage = ({ workers = [] }) => {
 
                     setSearchName(
                       e.target.value
-                    );
+                    )
 
-                    if (locationSearch) {
-                      clearLocationSearch();
+                    if (
+                      locationSearch
+                    ) {
+
+                      clearLocationSearch()
+
                     }
 
                   }}
@@ -639,13 +956,18 @@ const Homepage = ({ workers = [] }) => {
 
                   setSelectedState(
                     e.target.value
-                  );
+                  )
 
-                  setSelectedCity('');
-                  setSelectedLGA('');
+                  setSelectedCity('')
 
-                  if (locationSearch) {
-                    clearLocationSearch();
+                  setSelectedLGA('')
+
+                  if (
+                    locationSearch
+                  ) {
+
+                    clearLocationSearch()
+
                   }
 
                 }}
@@ -656,16 +978,18 @@ const Homepage = ({ workers = [] }) => {
                   Select State
                 </option>
 
-                {nigeriaStates.map((state) => (
+                {nigeriaStates.map(
+                  (state) => (
 
-                  <option
-                    key={state.isoCode}
-                    value={state.name}
-                  >
-                    {state.name}
-                  </option>
+                    <option
+                      key={state.isoCode}
+                      value={state.name}
+                    >
+                      {state.name}
+                    </option>
 
-                ))}
+                  )
+                )}
 
               </select>
 
@@ -678,10 +1002,14 @@ const Homepage = ({ workers = [] }) => {
 
                   setSelectedCity(
                     e.target.value
-                  );
+                  )
 
-                  if (locationSearch) {
-                    clearLocationSearch();
+                  if (
+                    locationSearch
+                  ) {
+
+                    clearLocationSearch()
+
                   }
 
                 }}
@@ -695,16 +1023,18 @@ const Homepage = ({ workers = [] }) => {
                     : 'Select state first'}
                 </option>
 
-                {cities.map((city, index) => (
+                {cities.map(
+                  (city, index) => (
 
-                  <option
-                    key={index}
-                    value={city.name}
-                  >
-                    {city.name}
-                  </option>
+                    <option
+                      key={index}
+                      value={city.name}
+                    >
+                      {city.name}
+                    </option>
 
-                ))}
+                  )
+                )}
 
               </select>
 
@@ -717,10 +1047,14 @@ const Homepage = ({ workers = [] }) => {
 
                   setSelectedLGA(
                     e.target.value
-                  );
+                  )
 
-                  if (locationSearch) {
-                    clearLocationSearch();
+                  if (
+                    locationSearch
+                  ) {
+
+                    clearLocationSearch()
+
                   }
 
                 }}
@@ -758,7 +1092,9 @@ const Homepage = ({ workers = [] }) => {
 
               <button
                 type="button"
-                onClick={handleUseLocation}
+                onClick={
+                  handleUseLocation
+                }
                 disabled={
                   locationLoading ||
                   locationSearchLoading
@@ -914,7 +1250,6 @@ const Homepage = ({ workers = [] }) => {
       </main>
 
 
-
       {/* =====================================================
           LIVE WORKER RESULTS
       ====================================================== */}
@@ -973,12 +1308,12 @@ const Homepage = ({ workers = [] }) => {
               <div className="px-4 py-2 rounded-xl bg-gray-900 border border-gray-800">
 
                 <span className="text-orange-500 font-bold">
-                  {displayedWorkers.length}
+                  {totalWorkers}
                 </span>
 
                 <span className="text-gray-400 text-sm ml-1">
 
-                  {displayedWorkers.length === 1
+                  {totalWorkers === 1
                     ? 'artisan'
                     : 'artisans'}{' '}
                   found
@@ -992,7 +1327,9 @@ const Homepage = ({ workers = [] }) => {
 
                 <button
                   type="button"
-                  onClick={clearAllFilters}
+                  onClick={
+                    clearAllFilters
+                  }
                   className="flex items-center gap-2 text-sm bg-gray-900 hover:bg-gray-800 border border-gray-800 px-4 py-2 rounded-xl transition"
                 >
 
@@ -1045,9 +1382,11 @@ const Homepage = ({ workers = [] }) => {
                   type="button"
                   onClick={() => {
 
-                    setSelectedState('');
-                    setSelectedCity('');
-                    setSelectedLGA('');
+                    setSelectedState('')
+
+                    setSelectedCity('')
+
+                    setSelectedLGA('')
 
                   }}
                   className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-300 px-3 py-1.5 rounded-full text-sm"
@@ -1104,7 +1443,9 @@ const Homepage = ({ workers = [] }) => {
 
                 <button
                   type="button"
-                  onClick={clearLocationSearch}
+                  onClick={
+                    clearLocationSearch
+                  }
                   className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-300 px-3 py-1.5 rounded-full text-sm"
                 >
 
@@ -1127,45 +1468,163 @@ const Homepage = ({ workers = [] }) => {
 
 
           {/* =================================================
-              RESULTS
+              ERROR
           ================================================== */}
 
-          {displayedWorkers.length > 0 ? (
+          {workersError && (
 
-            <motion.div
-              layout
-              className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
+            <div className="mb-8 text-center py-5 bg-red-500/10 border border-red-500/20 rounded-2xl">
 
-              <AnimatePresence mode="popLayout">
+              <p className="text-red-400">
+                {workersError}
+              </p>
 
-                {displayedWorkers.map((worker) => (
-  <motion.div
-    layout
-    key={worker._id}
-    initial={{
-      opacity: 0,
-      y: 20,
-    }}
-    animate={{
-      opacity: 1,
-      y: 0,
-    }}
-    exit={{
-      opacity: 0,
-      scale: 0.95,
-    }}
-    transition={{
-      duration: 0.3,
-    }}
-  >
-    <WorkerCard worker={worker} />
-  </motion.div>
-))}
+            </div>
 
-              </AnimatePresence>
+          )}
 
-            </motion.div>
+
+          {/* =================================================
+              LOADING
+          ================================================== */}
+
+          {isLoading ? (
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+              {[1, 2, 3, 4, 5, 6].map(
+                (item) => (
+
+                  <div
+                    key={item}
+                    className="h-80 rounded-2xl bg-gray-900 border border-gray-800 animate-pulse"
+                  />
+
+                )
+              )}
+
+            </div>
+
+          ) : workersToDisplay.length > 0 ? (
+
+            <>
+              <motion.div
+                layout
+                className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+              >
+
+                <AnimatePresence mode="popLayout">
+
+                  {workersToDisplay.map(
+                    (worker) => (
+
+                      <motion.div
+                        layout
+                        key={worker._id}
+                        initial={{
+                          opacity: 0,
+                          y: 20,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          scale: 0.95,
+                        }}
+                        transition={{
+                          duration: 0.3,
+                        }}
+                      >
+
+                        <WorkerCard
+                          worker={worker}
+                        />
+
+                      </motion.div>
+
+                    )
+                  )}
+
+                </AnimatePresence>
+
+              </motion.div>
+
+
+              {/* =================================================
+                  PAGINATION
+              ================================================== */}
+
+              {totalPages > 1 && (
+
+                <div className="flex flex-wrap justify-center items-center gap-2 mt-10">
+
+                  <button
+                    type="button"
+                    disabled={
+                      currentPage === 1
+                    }
+                    onClick={() =>
+                      goToPage(
+                        currentPage - 1
+                      )
+                    }
+                    className="px-4 py-2 rounded-xl bg-gray-900 border border-gray-800 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-800 transition"
+                  >
+                    Previous
+                  </button>
+
+
+                  {Array.from(
+                    {
+                      length: totalPages,
+                    },
+                    (_, index) =>
+                      index + 1
+                  ).map((page) => (
+
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() =>
+                        goToPage(page)
+                      }
+                      className={`min-w-10 px-3 py-2 rounded-xl font-semibold transition ${
+                        currentPage === page
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-gray-900 border border-gray-800 text-gray-300 hover:bg-gray-800'
+                      }`}
+                    >
+
+                      {page}
+
+                    </button>
+
+                  ))}
+
+
+                  <button
+                    type="button"
+                    disabled={
+                      currentPage ===
+                      totalPages
+                    }
+                    onClick={() =>
+                      goToPage(
+                        currentPage + 1
+                      )
+                    }
+                    className="px-4 py-2 rounded-xl bg-gray-900 border border-gray-800 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-800 transition"
+                  >
+                    Next
+                  </button>
+
+                </div>
+
+              )}
+
+            </>
 
           ) : (
 
@@ -1206,24 +1665,26 @@ const Homepage = ({ workers = [] }) => {
                         distance >
                         selectedRadius
                     )
-                    .map((distance) => (
+                    .map(
+                      (distance) => (
 
-                      <button
-                        key={distance}
-                        type="button"
-                        onClick={() =>
-                          setSelectedRadius(
-                            distance
-                          )
-                        }
-                        className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm"
-                      >
+                        <button
+                          key={distance}
+                          type="button"
+                          onClick={() =>
+                            setSelectedRadius(
+                              distance
+                            )
+                          }
+                          className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm"
+                        >
 
-                        Try {distance} km
+                          Try {distance} km
 
-                      </button>
+                        </button>
 
-                    ))}
+                      )
+                    )}
 
                 </div>
 
@@ -1232,7 +1693,9 @@ const Homepage = ({ workers = [] }) => {
 
               <button
                 type="button"
-                onClick={clearAllFilters}
+                onClick={
+                  clearAllFilters
+                }
                 className="mt-6 bg-orange-500 hover:bg-orange-600 px-5 py-2.5 rounded-xl font-semibold transition"
               >
 
@@ -1249,7 +1712,7 @@ const Homepage = ({ workers = [] }) => {
 
           {!hasNormalFilters &&
             !locationSearch &&
-            workers.length > 12 && (
+            totalWorkers > 12 && (
 
               <div className="text-center mt-8">
 
@@ -1271,7 +1734,6 @@ const Homepage = ({ workers = [] }) => {
         </div>
 
       </section>
-
 
 
       {/* =====================================================
@@ -1364,28 +1826,30 @@ const Homepage = ({ workers = [] }) => {
                     'State',
                     'City',
                     'LGA',
-                  ].map((item, index) => (
+                  ].map(
+                    (item, index) => (
 
-                    <React.Fragment
-                      key={item}
-                    >
+                      <React.Fragment
+                        key={item}
+                      >
 
-                      <span className="px-3 py-2 bg-gray-800 rounded-lg text-sm text-gray-300">
+                        <span className="px-3 py-2 bg-gray-800 rounded-lg text-sm text-gray-300">
 
-                        {item}
+                          {item}
 
-                      </span>
+                        </span>
 
 
-                      {index < 2 && (
+                        {index < 2 && (
 
-                        <FaChevronRight className="text-gray-600 self-center text-xs" />
+                          <FaChevronRight className="text-gray-600 self-center text-xs" />
 
-                      )}
+                        )}
 
-                    </React.Fragment>
+                      </React.Fragment>
 
-                  ))}
+                    )
+                  )}
 
                 </div>
 
@@ -1401,7 +1865,6 @@ const Homepage = ({ workers = [] }) => {
               </div>
 
             </motion.div>
-
 
 
             {/* NEARBY SEARCH */}
@@ -1487,7 +1950,6 @@ const Homepage = ({ workers = [] }) => {
       </section>
 
 
-
       {/* =====================================================
           HOW IT WORKS
       ====================================================== */}
@@ -1548,62 +2010,64 @@ const Homepage = ({ workers = [] }) => {
                 description:
                   'Contact your preferred artisan directly and discuss the job.',
               },
-            ].map((step, index) => (
+            ].map(
+              (step, index) => (
 
-              <motion.div
-                key={step.number}
-                initial={{
-                  opacity: 0,
-                  y: 25,
-                }}
-                whileInView={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                viewport={{
-                  once: true,
-                }}
-                transition={{
-                  delay: index * 0.1,
-                }}
-                className="relative bg-gray-900 border border-gray-800 rounded-2xl p-7"
-              >
+                <motion.div
+                  key={step.number}
+                  initial={{
+                    opacity: 0,
+                    y: 25,
+                  }}
+                  whileInView={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  viewport={{
+                    once: true,
+                  }}
+                  transition={{
+                    delay:
+                      index * 0.1,
+                  }}
+                  className="relative bg-gray-900 border border-gray-800 rounded-2xl p-7"
+                >
 
-                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center justify-between mb-6">
 
-                  <div className="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center text-xl">
+                    <div className="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center text-xl">
 
-                    {step.icon}
+                      {step.icon}
+
+                    </div>
+
+
+                    <span className="text-gray-700 font-black text-4xl">
+                      {step.number}
+                    </span>
 
                   </div>
 
 
-                  <span className="text-gray-700 font-black text-4xl">
-                    {step.number}
-                  </span>
-
-                </div>
+                  <h3 className="text-xl font-bold">
+                    {step.title}
+                  </h3>
 
 
-                <h3 className="text-xl font-bold">
-                  {step.title}
-                </h3>
+                  <p className="text-gray-400 mt-3 leading-7 text-sm">
+                    {step.description}
+                  </p>
 
+                </motion.div>
 
-                <p className="text-gray-400 mt-3 leading-7 text-sm">
-                  {step.description}
-                </p>
-
-              </motion.div>
-
-            ))}
+              )
+            )}
 
           </div>
 
         </div>
 
       </section>
-
 
 
       {/* =====================================================
@@ -1686,42 +2150,43 @@ const Homepage = ({ workers = [] }) => {
                 text:
                   'Connect directly with artisans instead of going through unnecessary middlemen.',
               },
-            ].map((item) => (
+            ].map(
+              (item) => (
 
-              <motion.div
-                key={item.title}
-                whileHover={{
-                  y: -4,
-                }}
-                className="bg-gray-900 border border-gray-800 rounded-2xl p-6"
-              >
+                <motion.div
+                  key={item.title}
+                  whileHover={{
+                    y: -4,
+                  }}
+                  className="bg-gray-900 border border-gray-800 rounded-2xl p-6"
+                >
 
-                <div className="w-11 h-11 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center text-lg mb-5">
+                  <div className="w-11 h-11 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center text-lg mb-5">
 
-                  {item.icon}
+                    {item.icon}
 
-                </div>
-
-
-                <h3 className="font-bold text-lg">
-                  {item.title}
-                </h3>
+                  </div>
 
 
-                <p className="text-gray-400 text-sm mt-2 leading-6">
-                  {item.text}
-                </p>
+                  <h3 className="font-bold text-lg">
+                    {item.title}
+                  </h3>
 
-              </motion.div>
 
-            ))}
+                  <p className="text-gray-400 text-sm mt-2 leading-6">
+                    {item.text}
+                  </p>
+
+                </motion.div>
+
+              )
+            )}
 
           </div>
 
         </div>
 
       </section>
-
 
 
       {/* =====================================================
@@ -1770,8 +2235,8 @@ const Homepage = ({ workers = [] }) => {
                 <Link
                   key={category.title}
                   href={`/workers?skill=${encodeURIComponent(
-  category.title.replace(/s$/, '')
-)}`}
+                    category.title.replace(/s$/, '')
+                  )}`}
                   className="group bg-gray-900 border border-gray-800 hover:border-orange-500/40 rounded-2xl p-5 transition"
                 >
 
@@ -1801,7 +2266,6 @@ const Homepage = ({ workers = [] }) => {
         </div>
 
       </section>
-
 
 
       {/* =====================================================
@@ -1879,14 +2343,16 @@ const Homepage = ({ workers = [] }) => {
                       currentTestimonial
                     ].rating
                   ),
-                ].map((_, index) => (
+                ].map(
+                  (_, index) => (
 
-                  <FaStar
-                    key={index}
-                    className="text-yellow-400 mr-1"
-                  />
+                    <FaStar
+                      key={index}
+                      className="text-yellow-400 mr-1"
+                    />
 
-                ))}
+                  )
+                )}
 
               </div>
 
@@ -1981,7 +2447,6 @@ const Homepage = ({ workers = [] }) => {
       </section>
 
 
-
       {/* =====================================================
           FINAL CTA
       ====================================================== */}
@@ -2056,9 +2521,9 @@ const Homepage = ({ workers = [] }) => {
 
     </div>
 
-  );
+  )
 
-};
+}
 
 
-export default Homepage;
+export default Homepage
