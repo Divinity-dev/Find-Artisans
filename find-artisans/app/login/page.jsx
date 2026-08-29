@@ -1,17 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import React, {
+  useEffect,
+  useState,
+} from 'react';
 
-import { useDispatch, useSelector } from 'react-redux';
+import Link from 'next/link';
+
+import {
+  useRouter,
+  useSearchParams,
+} from 'next/navigation';
+
+import {
+  useDispatch,
+  useSelector,
+} from 'react-redux';
 
 import {
   loginStart,
   loginSuccess,
   loginFail,
 } from '@/redux/slices/authSlice';
-import Cookies from 'js-cookie'
+
+import Cookies from 'js-cookie';
 
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -23,169 +35,390 @@ import {
   FaEnvelope,
 } from 'react-icons/fa';
 
+import { toast } from 'react-toastify';
+
 import API from '../axios';
-import { toast } from 'react-toastify'
+
 
 const LoginPage = () => {
+
   const dispatch = useDispatch();
+
   const router = useRouter();
 
-  const { loading, error } = useSelector(
+  const searchParams = useSearchParams();
+
+  const {
+    loading,
+    error,
+  } = useSelector(
     (state) => state.auth
   );
 
-  const [showPassword, setShowPassword] =
-    useState(false);
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
 
-  // =========================
-  // REDIRECT USER
-  // =========================
-  const normalizeRole = (inputRole) => {
-    if (!inputRole) return '';
-    return String(inputRole).toLowerCase();
+
+  // ======================================
+  // EMAIL VERIFICATION SUCCESS
+  // ======================================
+
+  useEffect(() => {
+
+    const verified =
+      searchParams.get('verified');
+
+    if (verified === 'true') {
+
+      toast.success(
+        '🎉 Email verified successfully! You can now log in.',
+        {
+          position: 'top-center',
+          autoClose: 5000,
+        }
+      );
+
+      // Remove ?verified=true
+      // from the URL
+      router.replace('/login');
+    }
+
+  }, [
+    searchParams,
+    router,
+  ]);
+
+
+  // ======================================
+  // NORMALIZE ROLE
+  // ======================================
+
+  const normalizeRole = (
+    inputRole
+  ) => {
+
+    if (!inputRole) {
+      return '';
+    }
+
+    return String(
+      inputRole
+    ).toLowerCase();
   };
 
-  const handleRedirect = (userData) => {
-    const user =
-      userData?.user || userData?.data?.user || userData?.data || userData;
-    const role = normalizeRole(user?.role);
+
+  // ======================================
+  // REDIRECT USER
+  // ======================================
+
+  const handleRedirect = (
+    user
+  ) => {
+
+    const role =
+      normalizeRole(
+        user?.role
+      );
 
     if (role === 'admin') {
+
       router.push('/admin');
-    } else if (role === 'customer') {
-      router.push('/customers-dashboard');
-    } else if (role === 'worker') {
-      router.push('/workers-dashboard');
+
+    } else if (
+      role === 'customer'
+    ) {
+
+      router.push(
+        '/customers-dashboard'
+      );
+
+    } else if (
+      role === 'worker'
+    ) {
+
+      router.push(
+        '/workers-dashboard'
+      );
+
     } else {
+
       router.push('/');
     }
   };
 
-  // =========================
+
+  // ======================================
   // FORMIK
-  // =========================
+  // ======================================
+
   const formik = useFormik({
+
     initialValues: {
       email: '',
       password: '',
     },
 
+
+    // ======================================
+    // VALIDATION
+    // ======================================
+
     validationSchema: Yup.object({
+
       email: Yup.string()
-        .email('Invalid email')
-        .required('Email is required'),
+        .email(
+          'Invalid email'
+        )
+        .required(
+          'Email is required'
+        ),
 
       password: Yup.string()
-        .min(6, 'Password too short')
-        .required('Password is required'),
+        .min(
+          6,
+          'Password must be at least 6 characters'
+        )
+        .required(
+          'Password is required'
+        ),
+
     }),
 
-    onSubmit: async (values) => {
-      try {
-        dispatch(loginStart());
 
-        const { data } = await API.post(
-          '/auth/login',
-          values
+    // ======================================
+    // LOGIN
+    // ======================================
+
+    onSubmit: async (
+      values
+    ) => {
+
+      try {
+
+        dispatch(
+          loginStart()
         );
 
-  Cookies.set('token', data.token, {
-  expires: 7,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-});
 
-Cookies.set('role', data.user.role, {
-  expires: 7,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-});
+        // ======================================
+        // LOGIN REQUEST
+        // ======================================
 
-        if (data.token) {
-          localStorage.setItem(
-            'token',
-            data.token
+        const {
+          data,
+        } = await API.post(
+          '/auth/login',
+          {
+            email:
+              values.email
+                .trim()
+                .toLowerCase(),
+
+            password:
+              values.password,
+          }
+        );
+
+
+        // ======================================
+        // MAKE SURE LOGIN WAS SUCCESSFUL
+        // ======================================
+
+        if (
+          !data?.token ||
+          !data?.user
+        ) {
+
+          throw new Error(
+            'Invalid login response'
           );
         }
 
-        if (data?.user) {
-          localStorage.setItem(
-            'user',
-            JSON.stringify(data.user)
-          );
-        }
 
-        const role = data?.user?.role || data?.role;
+        // ======================================
+        // SAVE TOKEN
+        // ======================================
 
-        if (role) {
-          Cookies.set('role', role, {
-            expires: 7,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-          });
-        } else {
-          Cookies.remove('role');
-        }
+        localStorage.setItem(
+          'token',
+          data.token
+        );
 
-        dispatch(loginSuccess(data));
 
-        handleRedirect(data);
-      } catch (err) {
-        dispatch(
-          loginFail(
-            err.response?.data?.message ||
-              'Login failed'
+        // ======================================
+        // SAVE USER
+        // ======================================
+
+        localStorage.setItem(
+          'user',
+          JSON.stringify(
+            data.user
           )
         );
-        toast.error(
+
+
+        // ======================================
+        // SAVE AUTH COOKIES
+        // ======================================
+
+        Cookies.set(
+          'token',
+          data.token,
+          {
+            expires: 7,
+            secure:
+              process.env.NODE_ENV ===
+              'production',
+            sameSite: 'strict',
+          }
+        );
+
+
+        Cookies.set(
+          'role',
+          data.user.role,
+          {
+            expires: 7,
+            secure:
+              process.env.NODE_ENV ===
+              'production',
+            sameSite: 'strict',
+          }
+        );
+
+
+        // ======================================
+        // UPDATE REDUX
+        // ======================================
+
+        dispatch(
+          loginSuccess(data)
+        );
+
+
+        // ======================================
+        // SUCCESS MESSAGE
+        // ======================================
+
+        toast.success(
+          'Login successful!'
+        );
+
+
+        // ======================================
+        // REDIRECT
+        // ======================================
+
+        handleRedirect(
+          data.user
+        );
+
+      } catch (err) {
+
+        const message =
           err.response?.data?.message ||
-            'Login failed'
+          err.message ||
+          'Login failed';
+
+
+        // ======================================
+        // UPDATE REDUX ERROR
+        // ======================================
+
+        dispatch(
+          loginFail(message)
+        );
+
+
+        // ======================================
+        // SHOW ERROR
+        // ======================================
+
+        toast.error(
+          message
         );
       }
     },
   });
 
+
+  // ======================================
+  // UI
+  // ======================================
+
   return (
+
     <div className="min-h-screen bg-gray-950 flex items-center justify-center px-5">
 
       <div className="relative w-full max-w-md">
 
-        {/* CARD */}
+        {/* ======================================
+            LOGIN CARD
+        ====================================== */}
+
         <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-8">
 
-          {/* HEADER */}
+
+          {/* ======================================
+              HEADER
+          ====================================== */}
+
           <div className="text-center mb-8">
+
             <h1 className="text-3xl font-bold text-white">
               Welcome Back
             </h1>
 
             <p className="text-gray-400 mt-2">
-              Login to access your artisan dashboard
+              Login to access your FindArtisans account
             </p>
+
           </div>
 
-          {/* FORM */}
+
+          {/* ======================================
+              FORM
+          ====================================== */}
+
           <form
-            onSubmit={formik.handleSubmit}
+            onSubmit={
+              formik.handleSubmit
+            }
             className="space-y-5"
           >
 
-            {/* EMAIL */}
+
+            {/* ======================================
+                EMAIL
+            ====================================== */}
+
             <div>
+
               <label className="text-sm text-gray-300">
                 Email
               </label>
 
               <div className="relative mt-2">
-                <FaEnvelope className="absolute top-3.5 left-3 text-gray-400" />
+
+                <FaEnvelope
+                  className="absolute top-3.5 left-3 text-gray-400"
+                />
 
                 <input
                   type="email"
                   name="email"
                   placeholder="you@example.com"
-                  value={formik.values.email}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
+                  value={
+                    formik.values.email
+                  }
+                  onChange={
+                    formik.handleChange
+                  }
+                  onBlur={
+                    formik.handleBlur
+                  }
                   className={`w-full pl-10 p-3 rounded-xl bg-gray-800 text-white outline-none border transition ${
                     formik.touched.email &&
                     formik.errors.email
@@ -193,24 +426,39 @@ Cookies.set('role', data.user.role, {
                       : 'border-gray-700 focus:border-orange-500'
                   }`}
                 />
+
               </div>
+
 
               {formik.touched.email &&
                 formik.errors.email && (
+
                   <p className="text-red-500 text-xs mt-1">
-                    {formik.errors.email}
+                    {
+                      formik.errors.email
+                    }
                   </p>
+
                 )}
+
             </div>
 
-            {/* PASSWORD */}
+
+            {/* ======================================
+                PASSWORD
+            ====================================== */}
+
             <div>
+
               <label className="text-sm text-gray-300">
                 Password
               </label>
 
               <div className="relative mt-2">
-                <FaLock className="absolute top-3.5 left-3 text-gray-400" />
+
+                <FaLock
+                  className="absolute top-3.5 left-3 text-gray-400"
+                />
 
                 <input
                   type={
@@ -220,9 +468,15 @@ Cookies.set('role', data.user.role, {
                   }
                   name="password"
                   placeholder="••••••••"
-                  value={formik.values.password}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
+                  value={
+                    formik.values.password
+                  }
+                  onChange={
+                    formik.handleChange
+                  }
+                  onBlur={
+                    formik.handleBlur
+                  }
                   className={`w-full pl-10 pr-10 p-3 rounded-xl bg-gray-800 text-white outline-none border transition ${
                     formik.touched.password &&
                     formik.errors.password
@@ -231,71 +485,119 @@ Cookies.set('role', data.user.role, {
                   }`}
                 />
 
+
+                {/* SHOW PASSWORD */}
+
                 <button
                   type="button"
                   onClick={() =>
-                    setShowPassword(!showPassword)
+                    setShowPassword(
+                      !showPassword
+                    )
                   }
-                  className="absolute right-3 top-3.5 text-gray-400"
+                  className="absolute right-3 top-3.5 text-gray-400 hover:text-white"
                 >
+
                   {showPassword ? (
                     <FaEyeSlash />
                   ) : (
                     <FaEye />
                   )}
+
                 </button>
+
               </div>
 
-              {/* 🔥 FORGOT PASSWORD LINK */}
+
+              {/* FORGOT PASSWORD */}
+
               <div className="flex justify-end mt-2">
+
                 <Link
                   href="/forgot-password"
-                  className="text-xs text-orange-400 hover:underline"
+                  className="text-xs text-orange-400 hover:text-orange-300 hover:underline"
                 >
                   Forgot password?
                 </Link>
+
               </div>
+
 
               {formik.touched.password &&
                 formik.errors.password && (
+
                   <p className="text-red-500 text-xs mt-1">
-                    {formik.errors.password}
+                    {
+                      formik.errors.password
+                    }
                   </p>
+
                 )}
+
             </div>
 
-            {/* BACKEND ERROR */}
+
+            {/* ======================================
+                BACKEND ERROR
+            ====================================== */}
+
             {error && (
-              <p className="text-red-500 text-sm text-center">
-                {error}
-              </p>
+
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+
+                <p className="text-red-400 text-sm text-center">
+                  {error}
+                </p>
+
+              </div>
+
             )}
 
-            {/* SUBMIT BUTTON */}
+
+            {/* ======================================
+                LOGIN BUTTON
+            ====================================== */}
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 transition text-white font-semibold py-3 rounded-xl shadow-lg disabled:opacity-60"
+              className="w-full bg-orange-500 hover:bg-orange-600 transition text-white font-semibold py-3 rounded-xl shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? 'Logging in...' : 'Login'}
+
+              {loading
+                ? 'Logging in...'
+                : 'Login'}
+
             </button>
+
           </form>
 
-          {/* FOOTER */}
+
+          {/* ======================================
+              REGISTER LINK
+          ====================================== */}
+
           <p className="text-center text-gray-400 text-sm mt-6">
+
             Don’t have an account?{' '}
+
             <Link
               href="/register"
-              className="text-orange-500 hover:underline"
+              className="text-orange-500 hover:text-orange-400 hover:underline font-medium"
             >
               Sign up
             </Link>
+
           </p>
 
         </div>
+
       </div>
+
     </div>
   );
 };
 
+
 export default LoginPage;
+

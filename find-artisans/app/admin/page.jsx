@@ -12,6 +12,7 @@ import {
   FaTimes,
 } from 'react-icons/fa'
 import { toast } from 'react-toastify'
+import AdminEmailEditor from '../../components/AdminEmailEditor'
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('stats')
@@ -31,6 +32,14 @@ const AdminDashboard = () => {
     id: null,
     label: '',
   })
+
+  const [emailForm, setEmailForm] = useState({
+  audience: 'everyone',
+  subject: '',
+  message: '',
+})
+
+const [sendingEmail, setSendingEmail] = useState(false)
 
   const openDeleteModal = (type, item) => {
   setDeleteModal({
@@ -221,6 +230,60 @@ const AdminDashboard = () => {
   }
 
   // =========================
+// SEND ADMIN EMAIL
+// =========================
+const sendAdminEmail = async () => {
+  if (!emailForm.subject.trim()) {
+    toast.error('Please enter an email subject')
+    return
+  }
+
+  if (!emailForm.message.trim()) {
+    toast.error('Please enter a message')
+    return
+  }
+
+  try {
+    setSendingEmail(true)
+
+    const response = await API.post(
+      '/admin/email',
+      emailForm
+    )
+
+    const stats = response.data.stats
+
+    toast.success(
+      `Email sent successfully to ${stats.sent} recipient${
+        stats.sent === 1 ? '' : 's'
+      }`
+    )
+
+    if (stats.failed > 0) {
+      toast.warning(
+        `${stats.failed} email${
+          stats.failed === 1 ? '' : 's'
+        } failed to send`
+      )
+    }
+
+    setEmailForm({
+      audience: 'everyone',
+      subject: '',
+      message: '',
+    })
+
+  } catch (err) {
+    toast.error(
+      err.response?.data?.message ||
+      'Failed to send email'
+    )
+  } finally {
+    setSendingEmail(false)
+  }
+}
+
+  // =========================
   // UI STATES
   // =========================
   if (loading)
@@ -247,7 +310,7 @@ const AdminDashboard = () => {
 
       {/* TABS */}
       <div className="w-full mb-8 grid grid-cols-2 gap-2 bg-gray-900 p-2 rounded-xl sm:flex sm:flex-wrap sm:items-center">
-        {['stats', 'verifications', 'workers', 'customers', 'complaints', 'jobs'].map(tab => (
+        {['stats','verifications','workers','customers','complaints','jobs','emails',].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -484,6 +547,123 @@ const AdminDashboard = () => {
           ))}
         </div>
       )}
+
+      {/* ========================= EMAILS ========================= */}
+
+{activeTab === 'emails' && (
+  <div className="w-full flex justify-center">
+
+    <div className="w-full max-w-3xl bg-gray-900 rounded-2xl p-6">
+
+      <h2 className="text-2xl font-bold text-white">
+        Send Email
+      </h2>
+
+      <p className="text-gray-400 mt-1 mb-6">
+        Send an email to workers, customers, or everyone.
+      </p>
+
+      {/* AUDIENCE */}
+
+      <div className="mb-5">
+
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          Send to
+        </label>
+
+        <select
+          value={emailForm.audience}
+          onChange={(e) =>
+            setEmailForm((prev) => ({
+              ...prev,
+              audience: e.target.value,
+            }))
+          }
+          disabled={sendingEmail}
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-orange-500"
+        >
+          <option value="workers">
+            Workers only
+          </option>
+
+          <option value="customers">
+            Customers only
+          </option>
+
+          <option value="everyone">
+            Everyone
+          </option>
+        </select>
+
+      </div>
+
+      {/* SUBJECT */}
+
+      <div className="mb-5">
+
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          Subject
+        </label>
+
+        <input
+          type="text"
+          value={emailForm.subject}
+          onChange={(e) =>
+            setEmailForm((prev) => ({
+              ...prev,
+              subject: e.target.value,
+            }))
+          }
+          disabled={sendingEmail}
+          placeholder="Enter email subject"
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-orange-500"
+        />
+
+      </div>
+
+      {/* MESSAGE */}
+
+      <div className="mb-6">
+
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          Message
+        </label>
+
+       {/* MESSAGE */}
+
+<div className="mb-6">
+
+  <AdminEmailEditor
+    value={emailForm.message}
+    onChange={(html) =>
+      setEmailForm((prev) => ({
+        ...prev,
+        message: html,
+      }))
+    }
+    disabled={sendingEmail}
+  />
+
+</div>
+
+      </div>
+
+      {/* SEND BUTTON */}
+
+      <button
+        onClick={sendAdminEmail}
+        disabled={sendingEmail}
+        className="w-full bg-orange-500 hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition"
+      >
+        {sendingEmail
+          ? 'Sending...'
+          : 'Send Email'}
+      </button>
+
+    </div>
+
+  </div>
+)}
 
       {/* ========================= DELETE CONFIRM MODAL ========================= */}
       {deleteModal.isOpen && (
