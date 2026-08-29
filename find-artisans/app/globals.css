@@ -28,3 +28,62 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Styling for Tiptap / ProseMirror content */
+.admin-email-editor {
+  min-height: 350px;
+  height: 100%;
+}
+
+.admin-email-editor:focus {
+  outline: none;
+}
+
+.admin-email-editor p {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+/* Force links to be blue and underlined regardless of Tailwind/ProseMirror resets */
+.admin-email-editor a,
+.admin-email-editor .ProseMirror a {
+  color: #2563eb !important; /* Tailwind blue-600 */
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.admin-email-editor a:hover,
+.admin-email-editor .ProseMirror a:hover {
+  color: #1d4ed8 !important; /* Tailwind blue-700 */
+}
+
+/* Bullet lists */
+.admin-email-editor .ProseMirror ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-bottom: 0.75rem;
+}
+
+/* Numbered lists */
+.admin-email-editor .ProseMirror ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin-bottom: 0.75rem;
+}
+
+/* List items */
+.admin-email-editor .ProseMirror li {
+  margin-bottom: 0.25rem;
+}
+
+/* Nested bullet lists */
+.admin-email-editor .ProseMirror ul ul {
+  list-style-type: circle !important;
+}
+
+/* Nested numbered lists */
+.admin-email-editor .ProseMirror ol ol {
+  list-style-type: lower-alpha !important;
+}
