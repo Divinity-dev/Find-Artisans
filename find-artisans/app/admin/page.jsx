@@ -108,29 +108,30 @@ const [sendingEmail, setSendingEmail] = useState(false)
   }, [page])
 
   // =========================
-  // VERIFY WORKER
+  // Verify user
   // =========================
-  const verifyWorker = async (id, action) => {
-    try {
-      await API.put(`/admin/verifications/${id}/verify`, {
-        isVerified: action === 'approve',
-      })
 
-      setVerifications((prev) =>
-        prev.filter((w) => w._id !== id)
-      )
+ const verifyUser = async (id, action) => {
+  try {
+    await API.put(`/admin/verifications/${id}/verify`, {
+      isVerified: action === 'approve',
+    })
 
-      toast.success(
-        action === 'approve'
-          ? 'Worker verified successfully'
-          : 'Worker verification rejected'
-      )
-    } catch (err) {
-      toast.error(
-        err.response?.data?.message || 'Action failed'
-      )
-    }
+    setVerifications((prev) =>
+      prev.filter((user) => user._id !== id)
+    )
+
+    toast.success(
+      action === 'approve'
+        ? 'User verified successfully'
+        : 'User verification rejected'
+    )
+  } catch (err) {
+    toast.error(
+      err.response?.data?.message || 'Action failed'
+    )
   }
+}
 
   // =========================
   // DELETE VERIFICATION REQUEST
@@ -357,8 +358,23 @@ const sendAdminEmail = async () => {
           {verifications.map(v => (
             <div key={v._id} className="bg-gray-900 p-5 rounded-xl">
 
-              <p className="text-lg font-bold">{v.fullName}</p>
-              <p className="text-gray-400">{v.skill}</p>
+              <p className="text-lg font-bold">
+  {v.fullName}
+</p>
+
+<p className="text-gray-400 capitalize">
+  {v.role}
+</p>
+
+<p className="text-gray-400">
+  {v.email}
+</p>
+
+{v.role === 'worker' && v.skill && (
+  <p className="text-gray-400">
+    Skill: {v.skill}
+  </p>
+)}
 
               <p className="mt-2 text-sm text-gray-300">
                 NIN: {v.verification?.nin || 'Not provided'}
@@ -378,7 +394,7 @@ const sendAdminEmail = async () => {
 
               <div className="flex gap-2 mt-4">
                 <button
-                  onClick={() => verifyWorker(v._id, 'approve')}
+                  onClick={() => verifyUser(v._id, 'approve')}
                   className="bg-green-500 px-3 py-1 rounded"
                 >
                   <FaCheck />
