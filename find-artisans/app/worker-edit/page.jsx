@@ -1010,7 +1010,7 @@ onChange={async (e) => {
             </label>
  
             <input
-              type="text"
+              type='number'
               name="yearsOfExperience"
               value={
                 formData.yearsOfExperience
