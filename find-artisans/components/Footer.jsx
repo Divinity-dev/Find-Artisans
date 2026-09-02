@@ -97,6 +97,12 @@ const Footer = () => {
             <Link href="/privacy" className="block hover:text-orange-500 transition">
               Privacy Policy
             </Link>
+            <Link
+  href="/delete-account"
+  className="block hover:text-orange-500 transition"
+>
+  Delete Account
+</Link>
           </div>
         </div>
 
