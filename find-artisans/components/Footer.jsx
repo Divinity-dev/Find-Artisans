@@ -124,8 +124,7 @@ const Footer = () => {
 
             <div className="flex items-center gap-2">
               <Mail size={16} className="text-orange-500" />
-              {/* support@findartisans.com */}
-              divine_asiriuwa@yahoo.com
+              support.findartisans@gmail.com
             </div>
 
           </div>
